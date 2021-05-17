@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 
-	. "github.com/logrusorgru/aurora"
+	colors "github.com/logrusorgru/aurora"
 	"github.com/urfave/cli/v2"
+
+	"github.com/exler/fileigloo/server"
 )
 
 type Cmd struct {
@@ -31,17 +34,32 @@ var cliCommands = []*cli.Command{
 			},
 		},
 		Action: func(c *cli.Context) error {
-			log.Printf("Running webapp on port %s", port)
+			srv := server.New()
+			err := srv.Run()
+
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	},
+	{
+		Name:    "version",
+		Usage:   "Show current version",
+		Aliases: []string{"v"},
+		Action: func(c *cli.Context) error {
+			fmt.Printf("fileigloo %s", Version)
 			return nil
 		},
 	},
 }
 
 func New() *Cmd {
-	log.SetPrefix(Blue("[fileigloo] ").String())
+	log.SetPrefix(colors.Blue("[fileigloo] ").String())
 
 	app := &cli.App{
-		Name:     "fileigloo",
+		Name:     fmt.Sprintf("fileigloo %s", Version),
 		Usage:    "Exchange files",
 		Flags:    globalFlags,
 		Commands: cliCommands,
