@@ -16,8 +16,6 @@ type Cmd struct {
 
 var Version = "0.0.1"
 
-var port string
-
 var globalFlags = []cli.Flag{}
 
 var cliCommands = []*cli.Command{
@@ -26,15 +24,38 @@ var cliCommands = []*cli.Command{
 		Usage: "Run the webapp",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:        "port",
-				Aliases:     []string{"p"},
-				Usage:       "Port number of the webapp",
-				Value:       "8000",
-				Destination: &port,
+				Name:    "port",
+				Aliases: []string{"p"},
+				Usage:   "Port number of the webapp",
+				Value:   "8000",
+			},
+			&cli.StringFlag{
+				Name:    "upload-directory",
+				Aliases: []string{"d"},
+				Usage:   "Directory to upload to",
+				Value:   "uploads/",
+			},
+			&cli.Int64Flag{
+				Name:    "max-upload-size",
+				Aliases: []string{"s"},
+				Usage:   "Max upload size",
+				Value:   10000,
 			},
 		},
 		Action: func(c *cli.Context) error {
-			srv := server.New()
+			var serverOptions = []server.OptionFn{}
+
+			if c.String("port") != "" {
+				serverOptions = append(serverOptions, server.Port(c.String("port")))
+			}
+			if c.String("upload-directory") != "" {
+				serverOptions = append(serverOptions, server.UploadDirectory(c.String("upload-directory")))
+			}
+			if c.Int64("max-upload-size") != 0 {
+				serverOptions = append(serverOptions, server.MaxUploadSize(c.Int64("max-upload-size")))
+			}
+
+			srv := server.New(serverOptions...)
 			err := srv.Run()
 
 			if err != nil {
