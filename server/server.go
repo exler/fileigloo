@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/gorilla/mux"
 )
 
 type OptionFn func(*Server)
@@ -48,10 +51,17 @@ func New(options ...OptionFn) *Server {
 }
 
 func (s *Server) Run() error {
-	log.Println("Server started...")
+	if _, err := os.Stat(s.uploadDirectory); os.IsNotExist(err) {
+		os.Mkdir(s.uploadDirectory, os.ModeDir)
+	}
 
-	http.HandleFunc("/", s.indexHandler)
-	http.HandleFunc("/upload", s.uploadHandler)
+	router := mux.NewRouter()
+	router.HandleFunc("/", s.indexHandler).Methods("GET")
+	router.HandleFunc("/upload", s.uploadHandler).Methods("POST")
+	router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET")
+	http.Handle("/", router)
+
+	log.Println("Server started...")
 
 	err := http.ListenAndServe(fmt.Sprintf(":%s", s.port), nil)
 	if err != nil {
