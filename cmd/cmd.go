@@ -42,6 +42,12 @@ var cliCommands = []*cli.Command{
 				Value:   10000,
 			},
 			&cli.IntFlag{
+				Name:    "rate-limit",
+				Aliases: []string{"r"},
+				Usage:   "Max allowed requests per second - 0 disables rate limiting",
+				Value:   5,
+			},
+			&cli.IntFlag{
 				Name:  "purge-older",
 				Usage: "How long before uploaded files are deleted (in hours)",
 				Value: 24,
@@ -65,6 +71,9 @@ var cliCommands = []*cli.Command{
 			}
 			if c.Int64("max-upload-size") != 0 {
 				serverOptions = append(serverOptions, server.MaxUploadSize(c.Int64("max-upload-size")))
+			}
+			if c.Int("rate-limit") != 0 {
+				serverOptions = append(serverOptions, server.RateLimit(c.Int("rate-limit")))
 			}
 			if !(c.Int("purge-older") < 0) && !(c.Int("purge-interval") < 0) {
 				serverOptions = append(serverOptions, server.Purge(c.Int("purge-older"), c.Int("purge-interval")))
