@@ -1,10 +1,9 @@
 package server
 
 import (
-	"fmt"
-	"io"
 	"net/http"
-	"os"
+	"strconv"
+	"time"
 
 	"github.com/exler/fileigloo/random"
 	"github.com/gorilla/mux"
@@ -21,35 +20,35 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		panic(err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 	defer file.Close()
 
-	var fileId, filePath string
+	var fileId string
 	for {
-		fileId = generateFileId()
-		filePath = fmt.Sprintf("%s%s", s.uploadDirectory, fileId)
-
-		_, err := os.Stat(filePath)
-		if os.IsNotExist(err) {
+		if fileId = generateFileId(); !s.storage.FileExists(fileId) {
 			break
 		}
 	}
 
-	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
-	defer f.Close()
-
-	io.Copy(f, file)
+	s.storage.Put(fileId, file)
 	w.Write([]byte("Thanks - file uploaded"))
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	filePath := fmt.Sprintf("%s%s", s.uploadDirectory, vars["fileId"])
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		w.Write([]byte("No such file!"))
+	fileId := vars["fileId"]
+	if !s.storage.FileExists(fileId) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	http.ServeFile(w, r, filePath)
+	reader, contentLength, err := s.storage.Get(fileId)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+	w.Header().Set("Content-Length", strconv.FormatInt(contentLength, 10))
+
+	http.ServeContent(w, r, fileId, time.Now(), reader)
 }

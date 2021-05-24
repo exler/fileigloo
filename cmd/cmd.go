@@ -26,13 +26,13 @@ var cliCommands = []*cli.Command{
 			&cli.StringFlag{
 				Name:    "port",
 				Aliases: []string{"p"},
-				Usage:   "Port number of the webapp",
+				Usage:   "Server port number",
 				Value:   "8000",
 			},
 			&cli.StringFlag{
 				Name:    "upload-directory",
 				Aliases: []string{"d"},
-				Usage:   "Directory to upload to",
+				Usage:   "Directory to upload files to",
 				Value:   "uploads/",
 			},
 			&cli.Int64Flag{
@@ -41,6 +41,21 @@ var cliCommands = []*cli.Command{
 				Usage:   "Max upload size",
 				Value:   10000,
 			},
+			&cli.IntFlag{
+				Name:  "purge-older",
+				Usage: "How long before uploaded files are deleted (in hours)",
+				Value: 24,
+			},
+			&cli.IntFlag{
+				Name:  "purge-interval",
+				Usage: "How often to check for expired files (in hours) - 0 disables purging",
+				Value: 24,
+			},
+			&cli.StringFlag{
+				Name:  "storage-provider",
+				Usage: "Choices: local",
+				Value: "local",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			var serverOptions = []server.OptionFn{}
@@ -48,11 +63,21 @@ var cliCommands = []*cli.Command{
 			if c.String("port") != "" {
 				serverOptions = append(serverOptions, server.Port(c.String("port")))
 			}
-			if c.String("upload-directory") != "" {
-				serverOptions = append(serverOptions, server.UploadDirectory(c.String("upload-directory")))
-			}
 			if c.Int64("max-upload-size") != 0 {
 				serverOptions = append(serverOptions, server.MaxUploadSize(c.Int64("max-upload-size")))
+			}
+			if !(c.Int("purge-older") < 0) && !(c.Int("purge-interval") < 0) {
+				serverOptions = append(serverOptions, server.Purge(c.Int("purge-older"), c.Int("purge-interval")))
+			}
+			switch storageProvider := c.String("storage-provider"); storageProvider {
+			case "local":
+				if udir := c.String("upload-directory"); udir == "" {
+					panic("Upload directory must be set for local storage!")
+				} else if storage, err := server.NewLocalStorage(udir); err != nil {
+					return err
+				} else {
+					serverOptions = append(serverOptions, server.UseStorage(storage))
+				}
 			}
 
 			srv := server.New(serverOptions...)
