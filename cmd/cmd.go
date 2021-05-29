@@ -44,7 +44,7 @@ var cliCommands = []*cli.Command{
 			&cli.IntFlag{
 				Name:    "rate-limit",
 				Aliases: []string{"r"},
-				Usage:   "Max allowed requests per second - 0 disables rate limiting",
+				Usage:   "Max allowed requests per second",
 				Value:   5,
 			},
 			&cli.IntFlag{
