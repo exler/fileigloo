@@ -9,7 +9,7 @@ import (
 )
 
 type Storage interface {
-	Get(filename string) (reader io.ReadSeekCloser, contentLength int64, err error)
+	Get(filename string) (reader io.ReadSeeker, contentLength int64, err error)
 	Put(filename string, reader io.Reader) error
 	Delete(filename string) error
 	Purge(days time.Duration) error
@@ -29,7 +29,7 @@ func NewLocalStorage(basedir string) (*LocalStorage, error) {
 	return &LocalStorage{basedir: basedir}, nil
 }
 
-func (s *LocalStorage) Get(filename string) (reader io.ReadSeekCloser, contentLength int64, err error) {
+func (s *LocalStorage) Get(filename string) (reader io.ReadSeeker, contentLength int64, err error) {
 	path := filepath.Join(s.basedir, filename)
 
 	if reader, err = os.Open(path); err != nil {
