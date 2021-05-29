@@ -45,6 +45,8 @@ func Port(port string) OptionFn {
 }
 
 type Server struct {
+	router *mux.Router
+
 	scheduler *gocron.Scheduler
 	storage   Storage
 
@@ -81,12 +83,15 @@ func New(options ...OptionFn) *Server {
 }
 
 func (s *Server) Run() error {
-	router := mux.NewRouter()
-	router.HandleFunc("/", s.indexHandler).Methods("GET")
-	router.HandleFunc("/upload", s.uploadHandler).Methods("POST")
-	router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET")
-	router.Use(s.limitMiddleware)
-	http.Handle("/", router)
+	fs := http.FileServer(http.Dir("./public"))
+
+	s.router = mux.NewRouter()
+	s.router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", fs))
+	s.router.HandleFunc("/", s.indexHandler).Methods("GET").Name("index")
+	s.router.HandleFunc("/upload", s.uploadHandler).Methods("POST").Name("upload")
+	s.router.HandleFunc("/file/{fileId}", s.downloadHandler).Methods("GET").Name("download")
+	s.router.Use(s.limitMiddleware)
+	http.Handle("/", s.router)
 
 	log.Println("Server started...")
 

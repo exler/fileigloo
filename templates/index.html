@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fileigloo</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/pcss-framework/dist/pcss.min.css">
+</head>
+
+<body>
+    <main>
+        <center>
+            <img src="/public/logo-transparent-white.svg" width="168" />
+        </center>
+
+        {{ if .Message }}
+        <div class="alert">
+            {{ .Message }}
+            {{ if .FileUrl }}
+            <a href="{{ .FileUrl }}">{{ .FileUrl }}</a>
+            {{ end }}
+        </div>
+        {{ end }}
+
+        <section id="file-upload">
+            <form action="/upload" method="POST" enctype="multipart/form-data">
+                <fieldset>
+                    <input type="file" name="file" />
+                    <button type="submit">Upload</button>
+                </fieldset>
+            </form>
+        </section>
+
+        <footer>
+            Copyright (c) 2021 by Kamil Marut
+        </footer>
+    </main>
+</body>
+
+</html>
