@@ -3,11 +3,13 @@ package server
 import (
 	"html/template"
 	"net/http"
+	"net/url"
 )
 
 type PageBody struct {
+	Host    string
 	Message string
-	FileUrl string
+	FileUrl *url.URL
 }
 
 var templates *template.Template

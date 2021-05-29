@@ -13,14 +13,16 @@
 <body>
     <main>
         <center>
-            <img src="/public/logo-transparent-white.svg" width="168" />
+            <a href="/">
+                <img src="/public/logo-transparent-white.svg" width="168" />
+            </a>
         </center>
 
         {{ if .Message }}
         <div class="alert">
-            {{ .Message }}
+            <p>{{ .Message }}</p>
             {{ if .FileUrl }}
-            <a href="{{ .FileUrl }}">{{ .FileUrl }}</a>
+            <a href="{{ .FileUrl }}">{{ .Host }}{{ .FileUrl }}</a>
             {{ end }}
         </div>
         {{ end }}

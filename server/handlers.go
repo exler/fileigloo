@@ -35,8 +35,9 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	s.storage.Put(fileId, file)
 	fileUrl, _ := s.router.Get("download").URL("fileId", fileId)
 	renderTemplate(w, "index", PageBody{
+		Host:    r.Host,
 		Message: "File uploaded successfully",
-		FileUrl: r.Host + fileUrl.String(),
+		FileUrl: fileUrl,
 	})
 }
 
