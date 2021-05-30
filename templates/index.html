@@ -8,6 +8,12 @@
     <title>Fileigloo</title>
 
     <link rel="stylesheet" href="https://unpkg.com/pcss-framework/dist/pcss.min.css">
+
+    <style>
+        #pastebin-input {
+            font-family: monospace;
+        }
+    </style>
 </head>
 
 <body>
@@ -25,8 +31,19 @@
         <section id="file-upload">
             <div>
                 <fieldset>
+                    <legend>File Upload</legend>
                     <input id="file-upload-input" type="file" name="file" />
                     <button id="file-upload-button" type="submit">Upload</button>
+                </fieldset>
+            </div>
+        </section>
+
+        <section id="pastebin">
+            <div>
+                <fieldset>
+                    <legend>Pastebin</legend>
+                    <textarea id="pastebin-input" autocomplete="off" rows="8"></textarea>
+                    <button id="pastebin-button" type="submit">Create</button>
                 </fieldset>
             </div>
         </section>
