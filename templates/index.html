@@ -18,28 +18,51 @@
             </a>
         </center>
 
-        {{ if .Message }}
-        <div class="alert">
-            <p>{{ .Message }}</p>
-            {{ if .FileUrl }}
-            <a href="{{ .FileUrl }}">{{ .Host }}{{ .FileUrl }}</a>
-            {{ end }}
+        <div id="alert">
+            <p></p>
         </div>
-        {{ end }}
 
         <section id="file-upload">
-            <form action="/upload" method="POST" enctype="multipart/form-data">
+            <div>
                 <fieldset>
-                    <input type="file" name="file" />
-                    <button type="submit">Upload</button>
+                    <input id="file-upload-input" type="file" name="file" />
+                    <button id="file-upload-button" type="submit">Upload</button>
                 </fieldset>
-            </form>
+            </div>
         </section>
 
         <footer>
             Copyright (c) 2021 by Kamil Marut
         </footer>
     </main>
+    <script>
+        function uploadFile(file) {
+            const url = "/";
+            const request = new XMLHttpRequest();
+            const fd = new FormData();
+
+            request.open("POST", url, true);
+            request.onreadystatechange = function() {
+                if (request.readyState == 4 && request.status == 200) {
+                    let response = JSON.parse(request.responseText);
+                    let alertDiv = document.getElementById("alert");
+                    alertDiv.children[0].innerHTML = `File uploaded successfully: <a href="${response["FileUrl"]}">${response["FileUrl"]}</a>`; 
+                }
+            };
+            fd.append("file", file);
+            request.send(fd);
+        }
+
+        window.onload = function() {
+            let uploadButton = document.getElementById("file-upload-button");
+            uploadButton.onclick = function() {
+                let uploadInput = document.getElementById("file-upload-input");
+                let uploadFileList = uploadInput.files;
+                for (let i = 0; i < uploadFileList.length; i++)
+                    uploadFile(uploadFileList[i]);
+            }
+        }
+    </script>
 </body>
 
 </html>

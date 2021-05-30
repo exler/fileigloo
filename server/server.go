@@ -81,8 +81,8 @@ func (s *Server) Run() error {
 	s.router = mux.NewRouter()
 	s.router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", fs))
 	s.router.HandleFunc("/", s.indexHandler).Methods("GET").Name("index")
-	s.router.HandleFunc("/upload", s.uploadHandler).Methods("POST").Name("upload")
-	s.router.HandleFunc("/file/{fileId}", s.downloadHandler).Methods("GET").Name("download")
+	s.router.HandleFunc("/", s.uploadHandler).Methods("POST").Name("upload")
+	s.router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET").Name("download")
 
 	log.Println("Server started...")
 

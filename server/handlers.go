@@ -14,7 +14,7 @@ func generateFileId() string {
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index", PageBody{})
+	renderTemplate(w, "index")
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,12 +33,17 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.storage.Put(fileId, file)
-	fileUrl, _ := s.router.Get("download").URL("fileId", fileId)
-	renderTemplate(w, "index", PageBody{
-		Host:    r.Host,
-		Message: "File uploaded successfully",
-		FileUrl: fileUrl,
-	})
+
+	fileUrl, err := s.router.Get("download").URL("fileId", fileId)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	response := FileUploadedResponse{
+		FileUrl: r.Host + fileUrl.String(),
+	}
+	sendJSON(w, response)
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
