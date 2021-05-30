@@ -1,7 +1,10 @@
 package server
 
 import (
+	"fmt"
+	"mime"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -18,12 +21,21 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
-	file, _, err := r.FormFile("file")
+	file, fheader, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
+
+	filename := SanitizeFilename(fheader.Filename)
+	contentType := mime.TypeByExtension(filepath.Ext(fheader.Filename))
+	contentLength := fheader.Size
+
+	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
+		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+		return
+	}
 
 	var fileId string
 	for {
@@ -32,7 +44,10 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.storage.Put(fileId, file)
+	metadata := MakeMetadata(filename, contentType, contentLength)
+	if err := s.storage.Put(fileId, file, metadata); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
 
 	fileUrl, err := s.router.Get("download").URL("fileId", fileId)
 	if err != nil {
@@ -54,11 +69,13 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reader, contentLength, err := s.storage.Get(fileId)
+	reader, metadata, err := s.storage.Get(fileId)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
-	w.Header().Set("Content-Length", strconv.FormatInt(contentLength, 10))
+	w.Header().Set("Content-Type", metadata.ContentType)
+	w.Header().Set("Content-Length", strconv.FormatInt(metadata.ContentLength, 10))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", metadata.Filename))
 
-	http.ServeContent(w, r, fileId, time.Now(), reader)
+	http.ServeContent(w, r, metadata.Filename, time.Now(), reader)
 }

@@ -1,6 +1,9 @@
 package server
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -8,9 +11,25 @@ import (
 	"time"
 )
 
+type Metadata struct {
+	Filename      string // original filename
+	ContentType   string
+	ContentLength int64
+}
+
+func MakeMetadata(filename string, contentType string, contentLength int64) Metadata {
+	metadata := Metadata{
+		Filename:      filename,
+		ContentType:   contentType,
+		ContentLength: contentLength,
+	}
+
+	return metadata
+}
+
 type Storage interface {
-	Get(filename string) (reader io.ReadSeeker, contentLength int64, err error)
-	Put(filename string, reader io.Reader) error
+	Get(filename string) (reader io.ReadSeeker, metadata Metadata, err error)
+	Put(filename string, reader io.Reader, metadata Metadata) error
 	Delete(filename string) error
 	Purge(days time.Duration) error
 	FileExists(filename string) bool
@@ -29,24 +48,26 @@ func NewLocalStorage(basedir string) (*LocalStorage, error) {
 	return &LocalStorage{basedir: basedir}, nil
 }
 
-func (s *LocalStorage) Get(filename string) (reader io.ReadSeeker, contentLength int64, err error) {
+func (s *LocalStorage) Get(filename string) (reader io.ReadSeeker, metadata Metadata, err error) {
 	path := filepath.Join(s.basedir, filename)
-
 	if reader, err = os.Open(path); err != nil {
 		return
 	}
 
-	var fi os.FileInfo
-	if fi, err = os.Lstat(path); err != nil {
+	metadataPath := fmt.Sprintf("%s.metadata", path)
+	if metadataReader, metadataError := os.Open(metadataPath); metadataError != nil {
+		err = metadataError
+		return
+	} else if metadataError = json.NewDecoder(metadataReader).Decode(&metadata); err != nil {
+		err = metadataError
 		return
 	}
 
-	contentLength = fi.Size()
 	return
 }
 
-func (s *LocalStorage) Put(filename string, reader io.Reader) error {
-	var f io.WriteCloser
+func (s *LocalStorage) Put(filename string, reader io.Reader, metadata Metadata) error {
+	var f, mf io.WriteCloser
 	var err error
 
 	if err = os.MkdirAll(s.basedir, os.ModeDir); os.IsNotExist(err) {
@@ -63,13 +84,34 @@ func (s *LocalStorage) Put(filename string, reader io.Reader) error {
 		return err
 	}
 
+	metadataPath := fmt.Sprintf("%s.metadata", path)
+	metadataBuffer := &bytes.Buffer{}
+	if err = json.NewEncoder(metadataBuffer).Encode(metadata); err != nil {
+		return err
+	}
+
+	if mf, err = os.OpenFile(metadataPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600); err != nil {
+		return err
+	}
+	defer mf.Close()
+
+	if _, err = io.Copy(mf, metadataBuffer); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *LocalStorage) Delete(filename string) error {
 	path := filepath.Join(s.basedir, filename)
-	err := os.Remove(path)
-	return err
+	metadataPath := fmt.Sprintf("%s.metadata", path)
+	if err := os.Remove(path); err != nil {
+		return err
+	} else if err := os.Remove(metadataPath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *LocalStorage) Purge(days time.Duration) error {
