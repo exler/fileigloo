@@ -64,6 +64,12 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fileId := vars["fileId"]
+
+	fileDisposition := "attachment"
+	if _, ok := r.URL.Query()["inline"]; ok {
+		fileDisposition = "inline"
+	}
+
 	if !s.storage.FileExists(fileId) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -75,7 +81,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", metadata.ContentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(metadata.ContentLength, 10))
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", metadata.Filename))
+	w.Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%s", fileDisposition, metadata.Filename))
 
 	http.ServeContent(w, r, metadata.Filename, time.Now(), reader)
 }
