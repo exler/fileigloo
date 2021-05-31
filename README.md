@@ -5,6 +5,29 @@
     </p>
 </p>
 
+- [Requirements](#requirements)
+- [Usage](#usage)
+- [License](#license)
+
+## Requirements
+
+* Go >= 1.15
+
+## Usage
+
+```bash
+USAGE:
+   fileigloo [global options] command [command options] [arguments...]
+
+COMMANDS:
+   run         Run the webapp
+   version, v  Show current version
+   help, h     Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h  show help (default: false)
+```
+
 ## License
 
 Copyright (c) 2021 by ***Kamil Marut***

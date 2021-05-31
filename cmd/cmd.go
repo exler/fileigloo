@@ -14,7 +14,7 @@ type Cmd struct {
 	*cli.App
 }
 
-var Version = "0.0.1"
+var Version = "0.1.0"
 
 var globalFlags = []cli.Flag{}
 
@@ -58,7 +58,7 @@ var cliCommands = []*cli.Command{
 				Value: 24,
 			},
 			&cli.StringFlag{
-				Name:  "storage-provider",
+				Name:  "storage",
 				Usage: "Choices: local",
 				Value: "local",
 			},
@@ -115,7 +115,7 @@ func New() *Cmd {
 
 	app := &cli.App{
 		Name:     fmt.Sprintf("fileigloo %s", Version),
-		Usage:    "Exchange files",
+		Usage:    "Small and simple temporary file sharing & pastebin",
 		Flags:    globalFlags,
 		Commands: cliCommands,
 	}
