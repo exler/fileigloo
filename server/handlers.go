@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"mime"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"github.com/exler/fileigloo/random"
 	"github.com/gorilla/mux"
 )
+
+const _24K = (1 << 3) * 24 // 24 Kilobits
 
 func generateFileId() string {
 	return random.String(12)
@@ -47,6 +50,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	metadata := MakeMetadata(filename, contentType, contentLength)
 	if err := s.storage.Put(fileId, file, metadata); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
 	fileUrl, err := s.router.Get("download").URL("fileId", fileId)
@@ -57,6 +61,50 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := FileUploadedResponse{
 		FileUrl: r.Host + fileUrl.String(),
+	}
+	sendJSON(w, response)
+}
+
+func (s *Server) pasteHandler(w http.ResponseWriter, r *http.Request) {
+	var paste string
+	if paste = r.FormValue("paste"); paste == "" {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	pasteBytes := []byte(paste)
+	reader := bytes.NewReader(pasteBytes)
+
+	filename := "Paste"
+	contentType := "text/plain"
+	contentLength := int64(len(pasteBytes))
+
+	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
+		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	var fileId string
+	for {
+		if fileId = generateFileId(); !s.storage.FileExists(fileId) {
+			break
+		}
+	}
+
+	metadata := MakeMetadata(filename, contentType, contentLength)
+	if err := s.storage.Put(fileId, reader, metadata); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	fileUrl, err := s.router.Get("download").URL("fileId", fileId)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	response := FileUploadedResponse{
+		FileUrl: r.Host + fileUrl.String() + "?inline",
 	}
 	sendJSON(w, response)
 }

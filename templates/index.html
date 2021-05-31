@@ -97,7 +97,7 @@
     </main>
     <script>
         function uploadFile(file) {
-            const url = "/";
+            const url = "/file";
             const request = new XMLHttpRequest();
             const fd = new FormData();
 
@@ -105,23 +105,50 @@
             request.onreadystatechange = function() {
                 if (request.readyState == 4 && request.status == 200) {
                     let response = JSON.parse(request.responseText);
-                    let alert = document.getElementById("alert");
-                    let alertText = alert.getElementsByTagName("center")[0];
-                    alertText.innerHTML = `File uploaded successfully: <a href="${response["FileUrl"]}">${response["FileUrl"]}</a>`;
-                    alert.style.display = "block";
+                    displayAlert(`File uploaded successfully: <a href="${response["FileUrl"]}">${response["FileUrl"]}</a>`);
                 }
             };
             fd.append("file", file);
             request.send(fd);
         }
 
+        function uploadPaste(paste) {
+            const url = "/paste";
+            const request = new XMLHttpRequest();
+            const fd = new FormData();
+
+            request.open("POST", url, true);
+            request.onreadystatechange = function() {
+                if (request.readyState == 4 && request.status == 200) {
+                    let response = JSON.parse(request.responseText);
+                    displayAlert(`Paste uploaded successfully: <a href="${response["FileUrl"]}">${response["FileUrl"]}</a>`);
+                }
+            };
+            fd.append("paste", paste);
+            request.send(fd);
+        }
+
+        function displayAlert(content) {
+            let alert = document.getElementById("alert");
+            let alertText = alert.getElementsByTagName("center")[0];
+            alertText.innerHTML = content;
+            alert.style.display = "block";
+        }
+
         window.onload = function() {
             let uploadButton = document.getElementById("file-upload-button");
+            let pastebinButton = document.getElementById("pastebin-button");
             uploadButton.onclick = function() {
                 let uploadInput = document.getElementById("file-select-input");
                 let file = uploadInput.files[0];
                 uploadFile(file);
             }
+            pastebinButton.onclick = function() {
+                let pastebinInput = document.getElementById("pastebin-input");
+                let paste = pastebinInput.value;
+                uploadPaste(paste);
+            }
+
 
             let fileSelect = document.getElementById("file-select");
             let fileInput = document.getElementById("file-select-input");
