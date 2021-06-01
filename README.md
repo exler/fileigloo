@@ -5,10 +5,6 @@
     </p>
 </p>
 
-- [Requirements](#requirements)
-- [Usage](#usage)
-- [License](#license)
-
 ## Requirements
 
 * Go >= 1.15
