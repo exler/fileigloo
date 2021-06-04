@@ -78,7 +78,7 @@ var cliCommands = []*cli.Command{
 			if !(c.Int("purge-older") < 0) && !(c.Int("purge-interval") < 0) {
 				serverOptions = append(serverOptions, server.Purge(c.Int("purge-older"), c.Int("purge-interval")))
 			}
-			switch storageProvider := c.String("storage-provider"); storageProvider {
+			switch storageProvider := c.String("storage"); storageProvider {
 			case "local":
 				if udir := c.String("upload-directory"); udir == "" {
 					panic("Upload directory must be set for local storage!")

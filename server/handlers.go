@@ -13,8 +13,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const _24K = (1 << 3) * 24 // 24 Kilobits
-
 func generateFileId() string {
 	return random.String(12)
 }
