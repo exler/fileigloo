@@ -109,7 +109,7 @@ func (s *Server) pasteHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	fileId := vars["fileId"]
+	fileId := SanitizeFilename(vars["fileId"])
 
 	fileDisposition := "attachment"
 	if _, ok := r.URL.Query()["inline"]; ok {
