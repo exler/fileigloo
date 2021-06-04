@@ -70,7 +70,7 @@ func (s *LocalStorage) Put(filename string, reader io.Reader, metadata Metadata)
 	var f, mf io.WriteCloser
 	var err error
 
-	if err = os.MkdirAll(s.basedir, os.ModeDir); os.IsNotExist(err) {
+	if err = os.MkdirAll(s.basedir, 0755); os.IsNotExist(err) {
 		return err
 	}
 
