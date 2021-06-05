@@ -1,0 +1,17 @@
+# Storage provider to use, choices: local
+storage: local
+
+# Folder to upload to
+upload_directory: uploads/
+
+# Max file size (in kilobytes)
+max_upload_size: 10000
+
+# Max requests per second
+rate_limit: 2
+
+# How long before uploaded files are deleted (in hours)
+purge_older: 24
+
+# How often to check for expired files (in hours) - 0 disables purging
+purge_interval: 24

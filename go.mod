@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/urfave/cli/v2 v2.3.0
+	github.com/spf13/cobra v1.1.3
+	github.com/spf13/viper v1.7.1
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 )

@@ -2,8 +2,11 @@
     <img src="public/logo.svg" width="124">
     <p align="center">❄️ Small and simple temporary file sharing & pastebin </p>
     <p align="center">
+      <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/exler/fileigloo">
     </p>
 </p>
+
+
 
 ## Requirements
 
@@ -11,17 +14,28 @@
 
 ## Usage
 
+Common configuration is in the [config/fileigloo.yaml](config/fileigloo.yaml) file. All of the configuration there, as well as flags passed to the program can be overriden by setting an environment variable with a `FI_` prefix (in uppercase). For example:
+
 ```bash
-USAGE:
-   fileigloo [global options] command [command options] [arguments...]
+# Overrides the storage provider
+$ export FI_STORAGE=s3
+```
 
-COMMANDS:
-   run         Run the webapp
-   version, v  Show current version
-   help, h     Shows a list of commands or help for one command
+Program usage:
 
-GLOBAL OPTIONS:
-   --help, -h  show help (default: false)
+```bash
+Usage:
+  fileigloo [command]
+
+Available Commands:
+  help        Help about any command
+  runserver   Run web server
+  version     Show current version
+
+Flags:
+  -h, --help   help for fileigloo
+
+Use "fileigloo [command] --help" for more information about a command.
 ```
 
 ## License

@@ -38,7 +38,7 @@ func UseStorage(storage Storage) OptionFn {
 	}
 }
 
-func Port(port string) OptionFn {
+func Port(port int) OptionFn {
 	return func(s *Server) {
 		s.port = port
 	}
@@ -56,7 +56,7 @@ type Server struct {
 	purgeOlder    time.Duration
 	purgeInterval int
 
-	port string
+	port int
 }
 
 func New(options ...OptionFn) *Server {
@@ -89,7 +89,7 @@ func (s *Server) Run() error {
 
 	s.scheduler.StartAsync()
 
-	err := http.ListenAndServe(fmt.Sprintf(":%s", s.port), tollbooth.LimitHandler(limiter, s.router))
+	err := http.ListenAndServe(fmt.Sprintf(":%d", s.port), tollbooth.LimitHandler(limiter, s.router))
 	if err != nil {
 		return err
 	}
