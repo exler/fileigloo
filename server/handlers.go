@@ -1,17 +1,23 @@
 package server
 
 import (
-	"bytes"
 	"fmt"
-	"mime"
+	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/exler/fileigloo/random"
 	"github.com/gorilla/mux"
 )
+
+// 24 Kilobits
+const _24K = (1 << 3) * 24
+
+// 4 Megabytes
+const _4M = (1 << 20) * 4
 
 func generateFileId() string {
 	return random.String(12)
@@ -22,16 +28,18 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
-	file, fheader, err := r.FormFile("file")
+	if err := r.ParseMultipartForm(_24K); err != nil {
+		log.Println(err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	file, filename, contentType, contentLength, err := GetUpload(r)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
-
-	filename := SanitizeFilename(fheader.Filename)
-	contentType := mime.TypeByExtension(filepath.Ext(fheader.Filename))
-	contentLength := fheader.Size
 
 	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
 		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
@@ -40,7 +48,8 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	var fileId string
 	for {
-		if fileId = generateFileId(); !s.storage.FileExists(fileId) {
+		fileId = generateFileId()
+		if _, err = s.storage.Get(fileId); s.storage.FileNotExists(err) {
 			break
 		}
 	}
@@ -63,50 +72,6 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, response)
 }
 
-func (s *Server) pasteHandler(w http.ResponseWriter, r *http.Request) {
-	var paste string
-	if paste = r.FormValue("paste"); paste == "" {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	pasteBytes := []byte(paste)
-	reader := bytes.NewReader(pasteBytes)
-
-	filename := "Paste"
-	contentType := "text/plain"
-	contentLength := int64(len(pasteBytes))
-
-	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
-		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
-		return
-	}
-
-	var fileId string
-	for {
-		if fileId = generateFileId(); !s.storage.FileExists(fileId) {
-			break
-		}
-	}
-
-	metadata := MakeMetadata(filename, contentType, contentLength)
-	if err := s.storage.Put(fileId, reader, metadata); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	fileUrl, err := s.router.Get("download").URL("fileId", fileId)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	response := FileUploadedResponse{
-		FileUrl: r.Host + fileUrl.String() + "?inline",
-	}
-	sendJSON(w, response)
-}
-
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fileId := SanitizeFilename(vars["fileId"])
@@ -116,18 +81,42 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		fileDisposition = "inline"
 	}
 
-	if !s.storage.FileExists(fileId) {
+	reader, metadata, err := s.storage.GetWithMetadata(fileId)
+	if s.storage.FileNotExists(err) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
-	}
-
-	reader, metadata, err := s.storage.Get(fileId)
-	if err != nil {
+	} else if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
+	defer reader.Close()
+
 	w.Header().Set("Content-Type", metadata.ContentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(metadata.ContentLength, 10))
 	w.Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%s", fileDisposition, metadata.Filename))
 
-	http.ServeContent(w, r, metadata.Filename, time.Now(), reader)
+	// Obtain FileSeeker
+	file, err := ioutil.TempFile("", "fileigloo-get-")
+	if err != nil {
+		log.Println("Error while trying to download: %s", err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	defer CleanTempFile(file)
+
+	tmpReader := io.TeeReader(reader, file)
+	for {
+		b := make([]byte, _4M)
+		if _, err := tmpReader.Read(b); err != io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Printf("Error while trying to copy to output file: %s", err.Error())
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	http.ServeContent(w, r, metadata.Filename, time.Now(), file)
 }

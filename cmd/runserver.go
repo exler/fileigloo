@@ -18,18 +18,30 @@ var (
 				server.Port(viper.GetInt("Port")),
 				server.MaxUploadSize(viper.GetInt64("max_upload_size")),
 				server.RateLimit(viper.GetInt("rate_limit")),
-				server.Purge(viper.GetInt("purge_older"), viper.GetInt("purge_interval")),
 			}
 
 			switch storageProvider := viper.GetString("storage"); storageProvider {
 			case "local":
 				if udir := viper.GetString("upload_directory"); udir == "" {
 					log.Fatalln("Upload directory must be set for local storage!")
-				} else if storage, err := server.NewLocalStorage(udir); err != nil {
+				} else if storage, err := server.NewLocalStorage(udir, viper.GetInt("purge_interval"), viper.GetInt("purge_older")); err != nil {
 					log.Fatalln(err)
 				} else {
 					serverOptions = append(serverOptions, server.UseStorage(storage))
 				}
+			case "s3":
+				bucket := viper.GetString("s3_bucket")
+				region := viper.GetString("s3_region")
+				accessKey := viper.GetString("aws_access_token")
+				secretKey := viper.GetString("aws_secret_key")
+				sessionToken := viper.GetString("aws_session_token")
+
+				if storage, err := server.NewS3Storage(accessKey, secretKey, sessionToken, region, bucket); err != nil {
+					log.Fatalln(err)
+				} else {
+					serverOptions = append(serverOptions, server.UseStorage(storage))
+				}
+
 			}
 
 			srv := server.New(serverOptions...)

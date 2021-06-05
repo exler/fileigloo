@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/didip/tollbooth"
-	"github.com/go-co-op/gocron"
 	"github.com/gorilla/mux"
 )
 
@@ -22,13 +20,6 @@ func MaxUploadSize(kbytes int64) OptionFn {
 func RateLimit(requests int) OptionFn {
 	return func(s *Server) {
 		s.maxRequests = requests
-	}
-}
-
-func Purge(older, interval int) OptionFn {
-	return func(s *Server) {
-		s.purgeOlder = time.Duration(older) * time.Hour
-		s.purgeInterval = interval
 	}
 }
 
@@ -47,30 +38,19 @@ func Port(port int) OptionFn {
 type Server struct {
 	router *mux.Router
 
-	scheduler *gocron.Scheduler
-	storage   Storage
+	storage Storage
 
 	maxUploadSize int64
 	maxRequests   int
-
-	purgeOlder    time.Duration
-	purgeInterval int
 
 	port int
 }
 
 func New(options ...OptionFn) *Server {
 	s := &Server{}
-
 	for _, optionFn := range options {
 		optionFn(s)
 	}
-
-	s.scheduler = gocron.NewScheduler(time.UTC)
-	if s.purgeInterval != 0 {
-		s.scheduler.Every(s.purgeInterval).Hours().Do(s.storage.Purge, s.purgeOlder)
-	}
-
 	return s
 }
 
@@ -81,13 +61,10 @@ func (s *Server) Run() error {
 	s.router = mux.NewRouter()
 	s.router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", fs))
 	s.router.HandleFunc("/", s.indexHandler).Methods("GET").Name("index")
-	s.router.HandleFunc("/file", s.uploadHandler).Methods("POST").Name("upload")
-	s.router.HandleFunc("/paste", s.pasteHandler).Methods("POST").Name("paste")
+	s.router.HandleFunc("/", s.uploadHandler).Methods("POST").Name("upload")
 	s.router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET").Name("download")
 
 	log.Println("Server started...")
-
-	s.scheduler.StartAsync()
 
 	err := http.ListenAndServe(fmt.Sprintf(":%d", s.port), tollbooth.LimitHandler(limiter, s.router))
 	if err != nil {
