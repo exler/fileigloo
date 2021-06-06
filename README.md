@@ -2,7 +2,8 @@
     <img src="public/logo.svg" width="124">
     <p align="center">❄️ Small and simple temporary file sharing & pastebin </p>
     <p align="center">
-      <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/exler/fileigloo">
+      <img alt="GitHub Test Workflow Status" src="https://img.shields.io/github/workflow/status/exler/fileigloo/Test">
+      <img alt="MIT License" src="https://img.shields.io/github/license/exler/fileigloo?color=lightblue">
     </p>
 </p>
 
@@ -21,7 +22,7 @@ Common configuration is in the [config/fileigloo.yaml](config/fileigloo.yaml) fi
 $ export STORAGE=s3
 ```
 
-Program usage:
+### Program usage
 
 ```bash
 Usage:
@@ -36,6 +37,32 @@ Flags:
   -h, --help   help for fileigloo
 
 Use "fileigloo [command] --help" for more information about a command.
+```
+
+### cURL examples
+
+* Upload file
+
+```bash
+$ curl -F file=@example.txt http://localhost:8000
+http://localhost:8000/M7JeqHRk3uw0
+```
+
+* Upload paste
+
+```bash
+$ curl -F text="Example request" http://localhost:8000
+http://localhost:8000/6QZuThTz8U7d?inline
+```
+
+* Download file
+
+```bash
+# Write to stdout
+$ curl http://localhost:8000/M7JeqHRk3uw0
+
+# Write to file
+$ curl -o output.txt http://localhost:8000/M7JeqHRk3uw0
 ```
 
 ## License
