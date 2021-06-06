@@ -2,19 +2,36 @@ package random
 
 import (
 	"math/rand"
+	"strings"
 	"time"
 )
 
-const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	letterIdxBits = 6
+	letterIdxMask = 1<<letterIdxBits - 1
+	letterIdxMax  = 63 / letterIdxBits
+)
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+var src = rand.NewSource(time.Now().UnixNano())
 
+// String generates a random string of given length using constant alphabet
+// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go/31832326#31832326
 func String(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = characters[rand.Int63()%int64(len(characters))]
+	sb := strings.Builder{}
+	sb.Grow(length)
+
+	for i, cache, remain := length-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			sb.WriteByte(letterBytes[idx])
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
 	}
-	return string(b)
+
+	return sb.String()
 }
