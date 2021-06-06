@@ -1,9 +1,6 @@
 package storage
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"io"
 	"time"
 
@@ -28,6 +25,10 @@ func newAWSSession(accessKey, secretKey, sessionToken, region string) *session.S
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, sessionToken),
 	}))
+}
+
+func (s *S3Storage) Type() string {
+	return "s3"
 }
 
 func NewS3Storage(accessKey, secretKey, sessionToken, region, bucket string) (*S3Storage, error) {
@@ -55,19 +56,17 @@ func (s *S3Storage) Get(filename string) (reader io.ReadCloser, err error) {
 }
 
 func (s *S3Storage) GetWithMetadata(filename string) (reader io.ReadCloser, metadata Metadata, err error) {
-	reader, err = s.Get(filename)
+	r := &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(filename),
+	}
+
+	response, err := s.s3.GetObject(r)
 	if err != nil {
 		return
 	}
-
-	var mReader io.ReadCloser
-	mPath := fmt.Sprintf("%s.metadata", filename)
-	mReader, err = s.Get(mPath)
-	if err != nil {
-		return
-	}
-
-	err = json.NewDecoder(mReader).Decode(&metadata)
+	reader = response.Body
+	metadata = StringMapToMetadata(response.Metadata)
 	return
 }
 
@@ -75,28 +74,14 @@ func (s *S3Storage) Put(filename string, reader io.Reader, metadata Metadata) er
 	uploader := s3manager.NewUploader(s.session, func(u *s3manager.Uploader) {
 		u.LeavePartsOnError = false
 	})
+	mMap := MetadataToStringMap(metadata)
 
 	_, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket:  aws.String(s.bucket),
-		Key:     aws.String(filename),
-		Body:    reader,
-		Expires: aws.Time(time.Now().Add(s.purgeOlder)),
-	})
-	if err != nil {
-		return err
-	}
-
-	mPath := fmt.Sprintf("%s.metadata", filename)
-	mBuffer := &bytes.Buffer{}
-	if err = json.NewEncoder(mBuffer).Encode(metadata); err != nil {
-		return err
-	}
-
-	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket:  aws.String(s.bucket),
-		Key:     aws.String(mPath),
-		Body:    mBuffer,
-		Expires: aws.Time(time.Now().Add(s.purgeOlder)),
+		Bucket:   aws.String(s.bucket),
+		Key:      aws.String(filename),
+		Body:     reader,
+		Metadata: mMap,
+		Expires:  aws.Time(time.Now().Add(s.purgeOlder)),
 	})
 
 	return err
@@ -108,21 +93,8 @@ func (s *S3Storage) Delete(filename string) error {
 		Key:    aws.String(filename),
 	}
 	_, err := s.s3.DeleteObject(r)
-	if err != nil {
-		return err
-	}
 
-	mPath := fmt.Sprintf("%s.metadata", filename)
-	r = &s3.DeleteObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(mPath),
-	}
-	_, err = s.s3.DeleteObject(r)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (s *S3Storage) Purge(days time.Duration) error {

@@ -53,6 +53,9 @@ func New(options ...OptionFn) *Server {
 	for _, optionFn := range options {
 		optionFn(s)
 	}
+
+	log.Printf("Storage type: %s\n", s.storage.Type())
+
 	return s
 }
 

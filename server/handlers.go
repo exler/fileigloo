@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/exler/fileigloo/random"
@@ -92,7 +91,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	defer reader.Close()
 
 	w.Header().Set("Content-Type", metadata.ContentType)
-	w.Header().Set("Content-Length", strconv.FormatInt(metadata.ContentLength, 10))
+	w.Header().Set("Content-Length", metadata.ContentLength)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%s", fileDisposition, metadata.Filename))
 
 	// Obtain FileSeeker
@@ -107,7 +106,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	tmpReader := io.TeeReader(reader, file)
 	for {
 		b := make([]byte, _4M)
-		if _, err := tmpReader.Read(b); err != io.EOF {
+		if _, err := tmpReader.Read(b); err == io.EOF {
 			break
 		}
 

@@ -1,17 +1,5 @@
-# Storage provider to use, choices: local
-storage: local
-
 # Folder to upload to (for local storage)
 upload_directory: uploads/
-
-# S3 bucket name (for S3 storage)
-s3_bucket:
-s3_region:
-
-# AWS credentials (for S3 storage)
-aws_access_key:
-aws_secret_key:
-aws_session_token:
 
 # Max file size (in kilobytes)
 max_upload_size: 10000

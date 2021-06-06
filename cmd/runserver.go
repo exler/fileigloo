@@ -33,7 +33,7 @@ var (
 			case "s3":
 				bucket := viper.GetString("s3_bucket")
 				region := viper.GetString("s3_region")
-				accessKey := viper.GetString("aws_access_token")
+				accessKey := viper.GetString("aws_access_key")
 				secretKey := viper.GetString("aws_secret_key")
 				sessionToken := viper.GetString("aws_session_token")
 
@@ -42,7 +42,8 @@ var (
 				} else {
 					serverOptions = append(serverOptions, server.UseStorage(storage))
 				}
-
+			default:
+				log.Fatalln("Incorrect or no storage type chosen!")
 			}
 
 			srv := server.New(serverOptions...)

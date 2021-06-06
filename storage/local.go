@@ -42,6 +42,10 @@ func NewLocalStorage(basedir string, purgeInterval, purgeOlder int) (*LocalStora
 	return storage, nil
 }
 
+func (s *LocalStorage) Type() string {
+	return "local storage"
+}
+
 func (s *LocalStorage) Get(filename string) (reader io.ReadCloser, err error) {
 	path := filepath.Join(s.basedir, filename)
 	reader, err = os.Open(path)
