@@ -104,11 +104,7 @@
             request.open("POST", url, true);
             request.onreadystatechange = function() {
                 if (request.readyState == 4 && request.status == 200) {
-                    let message;
-                    if (type === "text")
-                        message = `Upload successful: <a href="${request.responseText}?inline">${request.responseText}?inline</a>`
-                    else
-                        message = `Upload successful: <a href="${request.responseText}">${request.responseText}</a>`
+                    let message = `Upload successful: <a href="${request.responseText}">${request.responseText}</a>`
                     displayAlert(message);
                 } else if (request.status == 400) {
                     displayAlert("Bad request. Please try again.");
