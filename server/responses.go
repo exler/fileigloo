@@ -5,15 +5,17 @@ import (
 	"net/http"
 )
 
-type FileUploadedResponse struct {
-	FileUrl string
-}
-
-func sendJSON(w http.ResponseWriter, data interface{}) {
-	jsonResponse, err := json.Marshal(data)
+func SendJSON(w http.ResponseWriter, data interface{}) {
+	response, err := json.Marshal(data)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonResponse)
+	w.Write(response)
+}
+
+func SendPlain(w http.ResponseWriter, data string) {
+	response := []byte(data)
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write(response)
 }

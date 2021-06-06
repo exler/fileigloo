@@ -65,10 +65,8 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := FileUploadedResponse{
-		FileUrl: GetDownloadURL(r, fileUrl),
-	}
-	sendJSON(w, response)
+	response := GetDownloadURL(r, fileUrl)
+	SendPlain(w, response)
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
