@@ -12,7 +12,7 @@ type Metadata struct {
 	ContentLength string
 }
 
-func MakeMetadata(filename string, contentType string, contentLength int64) Metadata {
+func MakeMetadata(filename, contentType string, contentLength int64) Metadata {
 	metadata := Metadata{
 		Filename:      filename,
 		ContentType:   contentType,
