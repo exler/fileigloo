@@ -1,1 +1,1 @@
-web: bin/fileigloo
+web: bin/fileigloo runserver
