@@ -7,6 +7,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,6 +27,17 @@ func CleanTempFile(file *os.File) {
 			log.Printf("Error while trying to remove temp file: %s", err.Error())
 		}
 	}
+}
+
+func GetDownloadURL(r *http.Request, fileUrl *url.URL) string {
+	fileUrl.Host = r.Host
+	if r.TLS != nil {
+		fileUrl.Scheme = "https"
+	} else {
+		fileUrl.Scheme = "http"
+	}
+
+	return fileUrl.String()
 }
 
 func GetUpload(r *http.Request) (file io.Reader, filename, contentType string, contentLength int64, err error) {

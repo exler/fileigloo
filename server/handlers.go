@@ -66,7 +66,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := FileUploadedResponse{
-		FileUrl: r.Host + fileUrl.String(),
+		FileUrl: GetDownloadURL(r, fileUrl),
 	}
 	sendJSON(w, response)
 }
