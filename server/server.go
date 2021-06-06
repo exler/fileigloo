@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/exler/fileigloo/storage"
+
 	"github.com/didip/tollbooth"
 	"github.com/gorilla/mux"
 )
@@ -23,7 +25,7 @@ func RateLimit(requests int) OptionFn {
 	}
 }
 
-func UseStorage(storage Storage) OptionFn {
+func UseStorage(storage storage.Storage) OptionFn {
 	return func(s *Server) {
 		s.storage = storage
 	}
@@ -38,7 +40,7 @@ func Port(port int) OptionFn {
 type Server struct {
 	router *mux.Router
 
-	storage Storage
+	storage storage.Storage
 
 	maxUploadSize int64
 	maxRequests   int

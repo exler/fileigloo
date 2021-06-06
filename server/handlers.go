@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/exler/fileigloo/random"
+	"github.com/exler/fileigloo/storage"
 	"github.com/gorilla/mux"
 )
 
-// 24 Kilobits
-const _24K = (1 << 3) * 24
+// 128 Kilobits
+const _128K = (1 << 3) * 128
 
 // 4 Megabytes
 const _4M = (1 << 20) * 4
@@ -28,7 +29,7 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(_24K); err != nil {
+	if err := r.ParseMultipartForm(_128K); err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -39,7 +40,6 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
 
 	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
 		http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
@@ -54,7 +54,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	metadata := MakeMetadata(filename, contentType, contentLength)
+	metadata := storage.MakeMetadata(filename, contentType, contentLength)
 	if err := s.storage.Put(fileId, file, metadata); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -98,7 +98,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	// Obtain FileSeeker
 	file, err := ioutil.TempFile("", "fileigloo-get-")
 	if err != nil {
-		log.Println("Error while trying to download: %s", err.Error())
+		log.Printf("Error while trying to download: %s", err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

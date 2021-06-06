@@ -1,5 +1,20 @@
 package storage
 
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+)
+
 type S3Storage struct {
 	Storage
 	bucket     string
@@ -45,7 +60,7 @@ func (s *S3Storage) GetWithMetadata(filename string) (reader io.ReadCloser, meta
 		return
 	}
 
-	var mReader *io.File
+	var mReader io.ReadCloser
 	mPath := fmt.Sprintf("%s.metadata", filename)
 	mReader, err = s.Get(mPath)
 	if err != nil {

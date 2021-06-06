@@ -1,9 +1,15 @@
 package server
 
 import (
+	"bytes"
+	"io"
 	"log"
+	"mime"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 func SanitizeFilename(filename string) string {
@@ -22,20 +28,21 @@ func CleanTempFile(file *os.File) {
 	}
 }
 
-func GetUpload(r *http.Request) (file *io.File, filename, contentType string, contentLength int64, err error) {
+func GetUpload(r *http.Request) (file io.Reader, filename, contentType string, contentLength int64, err error) {
 	var fheader *multipart.FileHeader
-	var text string
-	if file, fheader, err = r.FormFile("file"); err != nil {
+	if file, fheader, err = r.FormFile("file"); err == nil {
 		filename = SanitizeFilename(fheader.Filename)
 		contentType = mime.TypeByExtension(filepath.Ext(fheader.Filename))
 		contentLength = fheader.Size
-	} else if text = r.FormValue("text"); text != "" {
-		textBytes := []byte(text)
-		file = bytes.NewReader(textBytes)
+	} else if text := r.FormValue("text"); text != "" {
+		err = nil
+
+		buf := []byte(text)
+		file = bytes.NewReader(buf)
 
 		filename = "Paste"
 		contentType = "text/plain"
-		contentLength = int64(len(textBytes))
+		contentLength = int64(len(buf))
 	}
 
 	return

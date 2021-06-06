@@ -1,5 +1,18 @@
 package storage
 
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/go-co-op/gocron"
+)
+
 type LocalStorage struct {
 	Storage
 	scheduler     *gocron.Scheduler
@@ -41,7 +54,7 @@ func (s *LocalStorage) GetWithMetadata(filename string) (reader io.ReadCloser, m
 		return
 	}
 
-	var mReader *io.File
+	var mReader io.ReadCloser
 	mPath := fmt.Sprintf("%s.metadata", filename)
 	mReader, err = s.Get(mPath)
 	if err != nil {
