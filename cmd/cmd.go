@@ -18,7 +18,6 @@ Source code available at github.com/exler/fileigloo`,
 func init() {
 	log.SetPrefix(colors.Blue("[fileigloo] ").String())
 
-	viper.SetEnvPrefix("fi")
 	viper.AutomaticEnv()
 	viper.AddConfigPath("config/")
 	viper.SetConfigName("fileigloo")

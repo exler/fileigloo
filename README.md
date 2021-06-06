@@ -14,11 +14,11 @@
 
 ## Usage
 
-Common configuration is in the [config/fileigloo.yaml](config/fileigloo.yaml) file. All of the configuration there, as well as flags passed to the program can be overriden by setting an environment variable with a `FI_` prefix (in uppercase). For example:
+Common configuration is in the [config/fileigloo.yaml](config/fileigloo.yaml) file. All of the configuration there, as well as flags passed to the program can be overriden by setting an environment variable (in uppercase). For example:
 
 ```bash
 # Overrides the storage provider
-$ export FI_STORAGE=s3
+$ export STORAGE=s3
 ```
 
 Program usage:
