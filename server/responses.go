@@ -15,6 +15,10 @@ func SendJSON(w http.ResponseWriter, data interface{}) {
 }
 
 func SendPlain(w http.ResponseWriter, data string) {
+	if data[len(data)-1] != '\n' {
+		data += "\n"
+	}
+
 	response := []byte(data)
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write(response)
