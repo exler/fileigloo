@@ -57,4 +57,6 @@ var (
 func init() {
 	serverCmd.Flags().Int("port", 8000, "Port to run the server on")
 	viper.BindPFlag("port", serverCmd.Flags().Lookup("port"))
+
+	viper.SetDefault("storage", "local")
 }

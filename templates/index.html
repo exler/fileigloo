@@ -96,8 +96,8 @@
         </footer>
     </main>
     <script>
-        function uploadFile(file) {
-            const url = "/file";
+        function upload(content, type = "file") {
+            const url = "/";
             const request = new XMLHttpRequest();
             const fd = new FormData();
 
@@ -105,26 +105,20 @@
             request.onreadystatechange = function() {
                 if (request.readyState == 4 && request.status == 200) {
                     let response = JSON.parse(request.responseText);
-                    displayAlert(`File uploaded successfully: <a href="${response["FileUrl"]}">${response["FileUrl"]}</a>`);
+                    let message;
+                    if (type === "text")
+                        message = `Upload successful: <a href="${response["FileUrl"]}?inline">${response["FileUrl"]}?inline</a>`
+                    else
+                        message = `Upload successful: <a href="${response["FileUrl"]}">${response["FileUrl"]}</a>`
+                    displayAlert(message);
+                } else if (request.status == 400) {
+                    displayAlert("Bad request. Please try again.");
+                } else {
+                    displayAlert("A server error occurred. Please try again.");
                 }
             };
-            fd.append("file", file);
-            request.send(fd);
-        }
 
-        function uploadPaste(paste) {
-            const url = "/paste";
-            const request = new XMLHttpRequest();
-            const fd = new FormData();
-
-            request.open("POST", url, true);
-            request.onreadystatechange = function() {
-                if (request.readyState == 4 && request.status == 200) {
-                    let response = JSON.parse(request.responseText);
-                    displayAlert(`Paste uploaded successfully: <a href="${response["FileUrl"]}">${response["FileUrl"]}</a>`);
-                }
-            };
-            fd.append("paste", paste);
+            fd.append(type, content);
             request.send(fd);
         }
 
@@ -141,14 +135,13 @@
             uploadButton.onclick = function() {
                 let uploadInput = document.getElementById("file-select-input");
                 let file = uploadInput.files[0];
-                uploadFile(file);
+                upload(file, "file");
             }
             pastebinButton.onclick = function() {
                 let pastebinInput = document.getElementById("pastebin-input");
-                let paste = pastebinInput.value;
-                uploadPaste(paste);
+                let text = pastebinInput.value;
+                upload(text, "text");
             }
-
 
             let fileSelect = document.getElementById("file-select");
             let fileInput = document.getElementById("file-select-input");
