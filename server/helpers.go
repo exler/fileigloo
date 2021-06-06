@@ -33,6 +33,8 @@ func GetDownloadURL(r *http.Request, fileUrl *url.URL) string {
 	fileUrl.Host = r.Host
 	if r.TLS != nil {
 		fileUrl.Scheme = "https"
+	} else if scheme := r.Header.Get("X-Forwarded-Proto"); scheme != "" {
+		fileUrl.Scheme = scheme
 	} else {
 		fileUrl.Scheme = "http"
 	}
