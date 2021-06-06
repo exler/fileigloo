@@ -107,8 +107,7 @@ func (s *S3Storage) FileNotExists(err error) bool {
 	}
 
 	if awsError, ok := err.(awserr.Error); ok {
-		switch awsError.Code() {
-		case s3.ErrCodeNoSuchKey:
+		if awsError.Code() == s3.ErrCodeNoSuchKey {
 			return true
 		}
 	}
