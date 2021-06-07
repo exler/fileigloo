@@ -71,6 +71,7 @@ func (s *Server) Run() error {
 	s.router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", fs))
 	s.router.HandleFunc("/", s.indexHandler).Methods("GET").Name("index")
 	s.router.HandleFunc("/", s.uploadHandler).Methods("POST").Name("upload")
+	s.router.HandleFunc("/{raw:(?:raw)}/{fileId}", s.downloadHandler).Methods("GET").Name("download-raw")
 	s.router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET").Name("download")
 
 	srv := &http.Server{

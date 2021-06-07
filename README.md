@@ -52,7 +52,7 @@ http://localhost:8000/M7JeqHRk3uw0
 
 ```bash
 $ curl -F text="Example request" http://localhost:8000
-http://localhost:8000/6QZuThTz8U7d?inline
+http://localhost:8000/raw/6QZuThTz8U7d
 ```
 
 * Download file

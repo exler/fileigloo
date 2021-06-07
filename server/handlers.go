@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/exler/fileigloo/random"
@@ -59,13 +60,19 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileUrl, err := s.router.Get("download").URL("fileId", fileId)
+	var fileUrl *url.URL
+	if contentType == "text/plain" {
+		fileUrl, err = s.router.Get("download-raw").URL("raw", "raw", "fileId", fileId)
+	} else {
+		fileUrl, err = s.router.Get("download").URL("fileId", fileId)
+	}
+
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	response := GetDownloadURL(r, fileUrl, contentType)
+	response := GetDownloadURL(r, fileUrl)
 	SendPlain(w, response)
 }
 
@@ -74,7 +81,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	fileId := SanitizeFilename(vars["fileId"])
 
 	fileDisposition := "attachment"
-	if _, ok := r.URL.Query()["inline"]; ok {
+	if _, ok := vars["raw"]; ok {
 		fileDisposition = "inline"
 	}
 

@@ -29,7 +29,7 @@ func CleanTempFile(file *os.File) {
 	}
 }
 
-func GetDownloadURL(r *http.Request, fileUrl *url.URL, contentType string) string {
+func GetDownloadURL(r *http.Request, fileUrl *url.URL) string {
 	fileUrl.Host = r.Host
 	if r.TLS != nil {
 		fileUrl.Scheme = "https"
@@ -39,12 +39,7 @@ func GetDownloadURL(r *http.Request, fileUrl *url.URL, contentType string) strin
 		fileUrl.Scheme = "http"
 	}
 
-	url := fileUrl.String()
-	if contentType == "text/plain" {
-		url += "?inline"
-	}
-
-	return url
+	return fileUrl.String()
 }
 
 func GetUpload(r *http.Request) (file io.Reader, filename, contentType string, contentLength int64, err error) {
