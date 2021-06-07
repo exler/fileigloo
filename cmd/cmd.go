@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"log"
+	"time"
 
+	"github.com/getsentry/sentry-go"
 	colors "github.com/logrusorgru/aurora"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -19,6 +21,8 @@ func init() {
 	log.SetPrefix(colors.Blue("[fileigloo] ").String())
 
 	viper.AutomaticEnv()
+	viper.SetDefault("storage", "local")
+
 	viper.AddConfigPath("config/")
 	viper.SetConfigName("fileigloo")
 	viper.SetConfigType("yaml")
@@ -29,6 +33,13 @@ func init() {
 			log.Fatalln("Unable to load configuration file")
 		}
 	}
+
+	err := sentry.Init(sentry.ClientOptions{})
+	if err != nil {
+		log.Fatalf("Sentry initialization error: %s", err)
+	}
+	// Flush buffered events before the program terminates
+	defer sentry.Flush(2 * time.Second)
 
 	Cmd.AddCommand(versionCmd, serverCmd)
 }
