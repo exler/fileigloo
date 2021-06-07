@@ -1,9 +1,13 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/exler/fileigloo/storage"
 
@@ -69,12 +73,35 @@ func (s *Server) Run() error {
 	s.router.HandleFunc("/", s.uploadHandler).Methods("POST").Name("upload")
 	s.router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET").Name("download")
 
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", s.port),
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      tollbooth.LimitHandler(limiter, s.router),
+	}
 	log.Println("Server started...")
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", s.port), tollbooth.LimitHandler(limiter, s.router))
-	if err != nil {
-		return err
-	}
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// Accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	signal.Notify(c, os.Interrupt)
+
+	// Block until signal received
+	<-c
+
+	// Wait 10 second for existing connections to finish
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	// Does not block if no connections, otherwises waits for timeout
+	srv.Shutdown(ctx)
 
 	return nil
 }
