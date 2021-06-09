@@ -41,7 +41,16 @@ func Port(port int) OptionFn {
 	}
 }
 
+func HTTPSOnly(httpsOnly bool) OptionFn {
+	return func(s *Server) {
+		log.Printf("HTTPS only: %t\n", httpsOnly)
+		s.httpsOnly = httpsOnly
+	}
+}
+
 type Server struct {
+	httpsOnly bool
+
 	router *mux.Router
 
 	storage storage.Storage
@@ -63,7 +72,7 @@ func New(options ...OptionFn) *Server {
 	return s
 }
 
-func (s *Server) Run() error {
+func (s *Server) Run() {
 	fs := http.FileServer(http.Dir("./public"))
 	limiter := tollbooth.NewLimiter(float64(s.maxRequests), nil)
 
@@ -81,12 +90,12 @@ func (s *Server) Run() error {
 		IdleTimeout:  time.Second * 60,
 		Handler:      tollbooth.LimitHandler(limiter, s.router),
 	}
-	log.Println("Server started...")
+	log.Println("http: Server started")
 
 	go func() {
 		err := srv.ListenAndServe()
 		if err != nil {
-			log.Println(err.Error())
+			log.Fatalln(err.Error())
 		}
 	}()
 
@@ -103,6 +112,4 @@ func (s *Server) Run() error {
 
 	// Does not block if no connections, otherwises waits for timeout
 	srv.Shutdown(ctx)
-
-	return nil
 }

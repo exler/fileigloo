@@ -16,9 +16,10 @@ var (
 		Long:  "Run web server allowing to upload files and pastes via API or browser",
 		Run: func(cmd *cobra.Command, args []string) {
 			serverOptions := []server.OptionFn{
-				server.Port(viper.GetInt("Port")),
+				server.Port(viper.GetInt("port")),
 				server.MaxUploadSize(viper.GetInt64("max_upload_size")),
 				server.RateLimit(viper.GetInt("rate_limit")),
+				server.HTTPSOnly(viper.GetBool("https-only")),
 			}
 
 			switch storageProvider := viper.GetString("storage"); storageProvider {
@@ -47,14 +48,14 @@ var (
 			}
 
 			srv := server.New(serverOptions...)
-			if err := srv.Run(); err != nil {
-				log.Fatalln(err)
-			}
+			srv.Run()
 		},
 	}
 )
 
 func init() {
 	serverCmd.Flags().Int("port", 8000, "Port to run the server on")
+	serverCmd.Flags().Bool("https-only", false, "Automatically make all URLs with HTTPS schema")
 	viper.BindPFlag("port", serverCmd.Flags().Lookup("port"))
+	viper.BindPFlag("https-only", serverCmd.Flags().Lookup("https-only"))
 }

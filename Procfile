@@ -1,1 +1,1 @@
-web: bin/fileigloo runserver
+web: bin/fileigloo runserver --https-only
