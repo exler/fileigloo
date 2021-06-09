@@ -65,7 +65,11 @@ func HTTPS(domains []string) OptionFn {
 			Cache:      autocert.DirCache("./cache"),
 		}
 
-		s.tlsConfig = &tls.Config{GetCertificate: m.GetCertificate}
+		s.tlsConfig = &tls.Config{
+			GetCertificate: m.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
+			MaxVersion:     0, // Use highest available version
+		}
 	}
 }
 
