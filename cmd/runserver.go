@@ -21,6 +21,14 @@ var (
 				server.RateLimit(viper.GetInt("rate_limit")),
 			}
 
+			if viper.GetBool("https") {
+				if domains := viper.GetStringSlice("domain"); len(domains) == 0 {
+					log.Fatalln("Please pass domains for the SSL certificate as arguments (usage: --domain='example.com')")
+				} else {
+					serverOptions = append(serverOptions, server.HTTPS(domains))
+				}
+			}
+
 			switch storageProvider := viper.GetString("storage"); storageProvider {
 			case "local":
 				if udir := viper.GetString("upload_directory"); udir == "" {
@@ -47,14 +55,16 @@ var (
 			}
 
 			srv := server.New(serverOptions...)
-			if err := srv.Run(); err != nil {
-				log.Fatalln(err)
-			}
+			srv.Run()
 		},
 	}
 )
 
 func init() {
 	serverCmd.Flags().Int("port", 8000, "Port to run the server on")
+	serverCmd.Flags().Bool("https", false, "Enable HTTPS server (requires --domain to be set)")
+	serverCmd.Flags().StringSlice("domain", []string{}, "Domains for Let's Encrypt certificate")
 	viper.BindPFlag("port", serverCmd.Flags().Lookup("port"))
+	viper.BindPFlag("https", serverCmd.Flags().Lookup("https"))
+	viper.BindPFlag("domain", serverCmd.Flags().Lookup("domain"))
 }

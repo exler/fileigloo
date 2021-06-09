@@ -2,14 +2,18 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/exler/fileigloo/storage"
+	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/didip/tollbooth"
 	"github.com/gorilla/mux"
@@ -41,7 +45,33 @@ func Port(port int) OptionFn {
 	}
 }
 
+func HTTPS(domains []string) OptionFn {
+	return func(s *Server) {
+		log.Println("HTTPS: enabled")
+
+		hostPolicy := func(ctx context.Context, host string) error {
+			for _, d := range domains {
+				if strings.HasSuffix(host, d) {
+					return nil
+				}
+			}
+
+			return errors.New("acme/autocert: hosts not allowed")
+		}
+
+		m := &autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: hostPolicy,
+			Cache:      autocert.DirCache("./cache"),
+		}
+
+		s.tlsConfig = &tls.Config{GetCertificate: m.GetCertificate}
+	}
+}
+
 type Server struct {
+	tlsConfig *tls.Config
+
 	router *mux.Router
 
 	storage storage.Storage
@@ -63,7 +93,7 @@ func New(options ...OptionFn) *Server {
 	return s
 }
 
-func (s *Server) Run() error {
+func (s *Server) Run() {
 	fs := http.FileServer(http.Dir("./public"))
 	limiter := tollbooth.NewLimiter(float64(s.maxRequests), nil)
 
@@ -80,15 +110,25 @@ func (s *Server) Run() error {
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
 		Handler:      tollbooth.LimitHandler(limiter, s.router),
+		TLSConfig:    s.tlsConfig,
 	}
-	log.Println("Server started...")
+	log.Println("http: Server started")
 
-	go func() {
-		err := srv.ListenAndServe()
-		if err != nil {
-			log.Println(err.Error())
-		}
-	}()
+	if s.tlsConfig != nil {
+		go func() {
+			err := srv.ListenAndServeTLS("", "")
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+		}()
+	} else {
+		go func() {
+			err := srv.ListenAndServe()
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+		}()
+	}
 
 	c := make(chan os.Signal, 1)
 	// Accept graceful shutdowns when quit via SIGINT (Ctrl+C)
@@ -103,6 +143,4 @@ func (s *Server) Run() error {
 
 	// Does not block if no connections, otherwises waits for timeout
 	srv.Shutdown(ctx)
-
-	return nil
 }

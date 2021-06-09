@@ -72,7 +72,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := GetDownloadURL(r, fileUrl)
+	response := s.GetDownloadURL(r, fileUrl)
 	SendPlain(w, response)
 }
 
