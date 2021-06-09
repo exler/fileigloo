@@ -106,10 +106,8 @@
                 if (request.readyState == 4 && request.status == 200) {
                     let message = `Upload successful: <a href="${request.responseText}">${request.responseText}</a>`
                     displayAlert(message);
-                } else if (request.status == 400) {
-                    displayAlert("Bad request. Please try again.");
                 } else {
-                    displayAlert("A server error occurred. Please try again.");
+                    displayAlert(request.responseText);
                 }
             };
 
