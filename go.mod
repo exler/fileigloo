@@ -4,12 +4,9 @@ go 1.16
 
 require (
 	github.com/aws/aws-sdk-go v1.38.55
-	github.com/aws/aws-sdk-go-v2 v1.6.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.10.0 // indirect
 	github.com/didip/tollbooth v4.0.2+incompatible
-	github.com/getsentry/sentry-go v0.11.0 // indirect
+	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-co-op/gocron v1.6.0
-	github.com/go-sql-driver/mysql v1.4.0 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
