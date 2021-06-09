@@ -29,9 +29,9 @@ func CleanTempFile(file *os.File) {
 	}
 }
 
-func GetDownloadURL(r *http.Request, fileUrl *url.URL) string {
+func (s *Server) GetDownloadURL(r *http.Request, fileUrl *url.URL) string {
 	fileUrl.Host = r.Host
-	if r.TLS != nil {
+	if s.httpsOnly || r.TLS != nil {
 		fileUrl.Scheme = "https"
 	} else if scheme := r.Header.Get("X-Forwarded-Proto"); scheme != "" {
 		fileUrl.Scheme = scheme
