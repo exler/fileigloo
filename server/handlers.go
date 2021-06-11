@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/exler/fileigloo/random"
@@ -98,7 +99,9 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	var fileDisposition string
 	if _, ok := vars["view"]; ok {
 		fileDisposition = "inline"
-		reader = ioutil.NopCloser(bluemonday.UGCPolicy().SanitizeReader(reader))
+		if strings.HasPrefix(metadata.ContentType, "text/") {
+			reader = ioutil.NopCloser(bluemonday.UGCPolicy().SanitizeReader(reader))
+		}
 	} else {
 		fileDisposition = "attachment"
 	}
