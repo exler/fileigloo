@@ -80,7 +80,7 @@ func (s *Server) Run() {
 	s.router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", fs))
 	s.router.HandleFunc("/", s.indexHandler).Methods("GET").Name("index")
 	s.router.HandleFunc("/", s.uploadHandler).Methods("POST").Name("upload")
-	s.router.HandleFunc("/{raw:(?:raw)}/{fileId}", s.downloadHandler).Methods("GET").Name("download-raw")
+	s.router.HandleFunc("/{view:(?:view)}/{fileId}", s.downloadHandler).Methods("GET").Name("view")
 	s.router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET").Name("download")
 
 	srv := &http.Server{

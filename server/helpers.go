@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 func SanitizeFilename(filename string) string {
@@ -26,6 +27,21 @@ func CleanTempFile(file *os.File) {
 		if err := os.Remove(file.Name()); err != nil {
 			log.Printf("Error while trying to remove temp file: %s", err.Error())
 		}
+	}
+}
+
+func ShowInline(contentType string) bool {
+	switch {
+	case contentType == "text/plain":
+		return true
+	case contentType == "application/pdf":
+		fallthrough
+	case strings.HasPrefix(contentType, "image/"):
+		fallthrough
+	case strings.HasPrefix(contentType, "video/"):
+		return true
+	default:
+		return false
 	}
 }
 

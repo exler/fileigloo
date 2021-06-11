@@ -12,6 +12,7 @@ import (
 	"github.com/exler/fileigloo/random"
 	"github.com/exler/fileigloo/storage"
 	"github.com/gorilla/mux"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 // 128 Kilobits
@@ -37,6 +38,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	file, filename, contentType, contentLength, err := GetUpload(r)
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -56,18 +58,20 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	metadata := storage.MakeMetadata(filename, contentType, contentLength)
 	if err := s.storage.Put(fileId, file, metadata); err != nil {
+		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	var fileUrl *url.URL
-	if contentType == "text/plain" {
-		fileUrl, err = s.router.Get("download-raw").URL("raw", "raw", "fileId", fileId)
+	if ShowInline(contentType) {
+		fileUrl, err = s.router.Get("view").URL("view", "view", "fileId", fileId)
 	} else {
 		fileUrl, err = s.router.Get("download").URL("fileId", fileId)
 	}
 
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -80,20 +84,24 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fileId := SanitizeFilename(vars["fileId"])
 
-	fileDisposition := "attachment"
-	if _, ok := vars["raw"]; ok {
-		fileDisposition = "inline"
-	}
-
 	reader, metadata, err := s.storage.GetWithMetadata(fileId)
 	if s.storage.FileNotExists(err) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	} else if err != nil {
+		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	defer reader.Close()
+
+	var fileDisposition string
+	if _, ok := vars["view"]; ok {
+		fileDisposition = "inline"
+		reader = ioutil.NopCloser(bluemonday.UGCPolicy().SanitizeReader(reader))
+	} else {
+		fileDisposition = "attachment"
+	}
 
 	w.Header().Set("Content-Type", metadata.ContentType)
 	w.Header().Set("Content-Length", metadata.ContentLength)
@@ -102,7 +110,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	// Obtain FileSeeker
 	file, err := ioutil.TempFile("", "fileigloo-get-")
 	if err != nil {
-		log.Printf("Error while trying to download: %s", err.Error())
+		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -116,7 +124,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err != nil {
-			log.Printf("Error while trying to copy to output file: %s", err.Error())
+			log.Println(err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
