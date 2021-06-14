@@ -12,6 +12,7 @@ import (
 
 	"github.com/exler/fileigloo/random"
 	"github.com/exler/fileigloo/storage"
+	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"
 	"github.com/microcosm-cc/bluemonday"
 )
@@ -32,6 +33,7 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(_128K); err != nil {
+		sentry.CaptureException(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -39,6 +41,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	file, filename, contentType, contentLength, err := GetUpload(r)
 	if err != nil {
+		sentry.CaptureException(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -59,6 +62,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	metadata := storage.MakeMetadata(filename, contentType, contentLength)
 	if err := s.storage.Put(fileId, file, metadata); err != nil {
+		sentry.CaptureException(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -72,12 +76,15 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		sentry.CaptureException(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	response := s.GetDownloadURL(r, fileUrl)
+	sentry.CaptureMessage(fmt.Sprintf("New file uploaded: %s", response))
+
 	SendPlain(w, response)
 }
 
@@ -90,6 +97,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	} else if err != nil {
+		sentry.CaptureException(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -113,6 +121,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	// Obtain FileSeeker
 	file, err := ioutil.TempFile("", "fileigloo-get-")
 	if err != nil {
+		sentry.CaptureException(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -127,6 +136,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err != nil {
+			sentry.CaptureException(err)
 			log.Println(err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return

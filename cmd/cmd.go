@@ -34,7 +34,12 @@ func init() {
 		}
 	}
 
-	err := sentry.Init(sentry.ClientOptions{})
+	err := sentry.Init(sentry.ClientOptions{
+		TracesSampleRate: 0.2,
+		TracesSampler: sentry.TracesSamplerFunc(func(ctx sentry.SamplingContext) sentry.Sampled {
+			return sentry.SampledTrue
+		}),
+	})
 	if err != nil {
 		log.Fatalf("Sentry initialization error: %s", err)
 	}
