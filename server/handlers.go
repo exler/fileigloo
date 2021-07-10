@@ -41,9 +41,14 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	file, filename, contentType, contentLength, err := GetUpload(r)
 	if err != nil {
-		sentry.CaptureException(err)
-		log.Println(err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		if err == http.ErrMissingFile {
+			http.Error(w, "Request is missing `file` or `text` parameters", http.StatusBadRequest)
+		} else {
+			sentry.CaptureException(err)
+			log.Println(err.Error())
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		}
+
 		return
 	}
 
