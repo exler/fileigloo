@@ -9,7 +9,7 @@ require (
 	github.com/go-co-op/gocron v1.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/microcosm-cc/bluemonday v1.0.10
+	github.com/microcosm-cc/bluemonday v1.0.16
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
