@@ -91,7 +91,7 @@
         </section>
 
         <footer>
-            Copyright (c) 2021 by Kamil Marut |
+            Copyright (c) <span id="copyright-year"></span> by Kamil Marut |
             <a href="https://github.com/exler/fileigloo" target="_blank" rel="noopener noreferrer">Github</a>
         </footer>
     </main>
@@ -144,6 +144,8 @@
                 let selectFilename = document.getElementById("file-select-filename");
                 selectFilename.innerText = filename;
             }
+
+            document.getElementById("copyright-year").innerHTML = new Date().getFullYear();
         }
     </script>
 </body>

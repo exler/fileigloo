@@ -32,10 +32,11 @@ func CleanTempFile(file *os.File) {
 
 func ShowInline(contentType string) bool {
 	switch {
-	case contentType == "text/plain",
+	case
+		contentType == "text/plain",
 		contentType == "application/pdf",
 		strings.HasPrefix(contentType, "image/"),
-		strings.HasPrefix(contentType, "video/"),
+		strings.HasPrefix(contentType, "audio/"),
 		strings.HasPrefix(contentType, "video/"):
 		return true
 	default:
