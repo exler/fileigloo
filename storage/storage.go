@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"io"
 	"strconv"
 	"time"
@@ -43,11 +44,11 @@ func StringMapToMetadata(m map[string]*string) Metadata {
 }
 
 type Storage interface {
-	Get(filename string) (reader io.ReadCloser, err error)
-	GetWithMetadata(filename string) (reader io.ReadCloser, metadata Metadata, err error)
-	Put(filename string, reader io.Reader, metadata Metadata) error
-	Delete(filename string) error
-	Purge(days time.Duration) error
+	Get(ctx context.Context, filename string) (reader io.ReadCloser, err error)
+	GetWithMetadata(ctx context.Context, filename string) (reader io.ReadCloser, metadata Metadata, err error)
+	Put(ctx context.Context, filename string, reader io.Reader, metadata Metadata) error
+	Delete(ctx context.Context, filename string) error
+	Purge(ctx context.Context, days time.Duration) error
 	FileNotExists(err error) bool
 	Type() string
 }

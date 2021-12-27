@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -14,10 +15,9 @@ import (
 
 type S3Storage struct {
 	Storage
-	bucket     string
-	s3         *s3.S3
-	session    *session.Session
-	purgeOlder time.Duration
+	s3      *s3.S3
+	session *session.Session
+	bucket  string
 }
 
 func newAWSSession(accessKey, secretKey, sessionToken, region string) *session.Session {
@@ -32,16 +32,16 @@ func (s *S3Storage) Type() string {
 }
 
 func NewS3Storage(accessKey, secretKey, sessionToken, region, bucket string) (*S3Storage, error) {
-	sess := newAWSSession(accessKey, secretKey, sessionToken, region)
+	session := newAWSSession(accessKey, secretKey, sessionToken, region)
 
 	return &S3Storage{
+		s3:      s3.New(session),
+		session: session,
 		bucket:  bucket,
-		s3:      s3.New(sess),
-		session: sess,
 	}, nil
 }
 
-func (s *S3Storage) Get(filename string) (reader io.ReadCloser, err error) {
+func (s *S3Storage) Get(ctx context.Context, filename string) (reader io.ReadCloser, err error) {
 	r := &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(filename),
@@ -55,7 +55,7 @@ func (s *S3Storage) Get(filename string) (reader io.ReadCloser, err error) {
 	return
 }
 
-func (s *S3Storage) GetWithMetadata(filename string) (reader io.ReadCloser, metadata Metadata, err error) {
+func (s *S3Storage) GetWithMetadata(ctx context.Context, filename string) (reader io.ReadCloser, metadata Metadata, err error) {
 	r := &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(filename),
@@ -70,7 +70,7 @@ func (s *S3Storage) GetWithMetadata(filename string) (reader io.ReadCloser, meta
 	return
 }
 
-func (s *S3Storage) Put(filename string, reader io.Reader, metadata Metadata) error {
+func (s *S3Storage) Put(ctx context.Context, filename string, reader io.Reader, metadata Metadata) error {
 	uploader := s3manager.NewUploader(s.session, func(u *s3manager.Uploader) {
 		u.LeavePartsOnError = false
 	})
@@ -81,13 +81,12 @@ func (s *S3Storage) Put(filename string, reader io.Reader, metadata Metadata) er
 		Key:      aws.String(filename),
 		Body:     reader,
 		Metadata: mMap,
-		Expires:  aws.Time(time.Now().Add(s.purgeOlder)),
 	})
 
 	return err
 }
 
-func (s *S3Storage) Delete(filename string) error {
+func (s *S3Storage) Delete(ctx context.Context, filename string) error {
 	r := &s3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(filename),
@@ -97,7 +96,7 @@ func (s *S3Storage) Delete(filename string) error {
 	return err
 }
 
-func (s *S3Storage) Purge(days time.Duration) error {
+func (s *S3Storage) Purge(ctx context.Context, days time.Duration) error {
 	return nil
 }
 

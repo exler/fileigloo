@@ -12,9 +12,9 @@ import (
 
 	"github.com/exler/fileigloo/random"
 	"github.com/exler/fileigloo/storage"
-	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"
 	"github.com/microcosm-cc/bluemonday"
+	"github.com/rollbar/rollbar-go"
 )
 
 // 128 Kilobits
@@ -33,7 +33,7 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(_128K); err != nil {
-		sentry.CaptureException(err)
+		rollbar.Error(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -44,7 +44,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err == http.ErrMissingFile {
 			http.Error(w, "Request is missing `file` or `text` parameters", http.StatusBadRequest)
 		} else {
-			sentry.CaptureException(err)
+			rollbar.Error(err)
 			log.Println(err.Error())
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
@@ -60,14 +60,14 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	var fileId string
 	for {
 		fileId = generateFileId()
-		if _, err = s.storage.Get(fileId); s.storage.FileNotExists(err) {
+		if _, err = s.storage.Get(r.Context(), fileId); s.storage.FileNotExists(err) {
 			break
 		}
 	}
 
 	metadata := storage.MakeMetadata(filename, contentType, contentLength)
-	if err := s.storage.Put(fileId, file, metadata); err != nil {
-		sentry.CaptureException(err)
+	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
+		rollbar.Error(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -81,14 +81,14 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		sentry.CaptureException(err)
+		rollbar.Error(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	response := s.GetDownloadURL(r, fileUrl)
-	sentry.CaptureMessage(fmt.Sprintf("New file uploaded: %s", response))
+	rollbar.Info(fmt.Sprintf("New file uploaded: %s", response))
 
 	SendPlain(w, response)
 }
@@ -97,12 +97,12 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fileId := SanitizeFilename(vars["fileId"])
 
-	reader, metadata, err := s.storage.GetWithMetadata(fileId)
+	reader, metadata, err := s.storage.GetWithMetadata(r.Context(), fileId)
 	if s.storage.FileNotExists(err) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	} else if err != nil {
-		sentry.CaptureException(err)
+		rollbar.Error(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -126,7 +126,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	// Obtain FileSeeker
 	file, err := ioutil.TempFile("", "fileigloo-get-")
 	if err != nil {
-		sentry.CaptureException(err)
+		rollbar.Error(err)
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -141,7 +141,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err != nil {
-			sentry.CaptureException(err)
+			rollbar.Error(err)
 			log.Println(err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
