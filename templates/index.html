@@ -138,10 +138,20 @@
 
             let fileSelect = document.getElementById("file-select");
             let fileInput = document.getElementById("file-select-input");
+            let selectFilename = document.getElementById("file-select-filename");
+            let page = document.querySelector("html")
             fileSelect.onclick = function() { fileInput.click(); }
+            fileSelect.ondragover = function(event) { event.stopPropagation(); event.preventDefault(); }
+            fileSelect.ondrop = function(event) {
+                event.stopPropagation();
+                event.preventDefault();
+                let dt = event.dataTransfer; 
+                let file = dt.files[0];
+                selectFilename.innerText = file.name;
+                upload(file, "file")
+            }
             fileInput.onchange = function() {
                 let filename = fileInput.files[0].name;
-                let selectFilename = document.getElementById("file-select-filename");
                 selectFilename.innerText = filename;
             }
 
