@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,21 +47,21 @@ func (s *LocalStorage) Type() string {
 	return "local storage"
 }
 
-func (s *LocalStorage) Get(filename string) (reader io.ReadCloser, err error) {
+func (s *LocalStorage) Get(ctx context.Context, filename string) (reader io.ReadCloser, err error) {
 	path := filepath.Join(s.basedir, filename)
 	reader, err = os.Open(path)
 	return
 }
 
-func (s *LocalStorage) GetWithMetadata(filename string) (reader io.ReadCloser, metadata Metadata, err error) {
-	reader, err = s.Get(filename)
+func (s *LocalStorage) GetWithMetadata(ctx context.Context, filename string) (reader io.ReadCloser, metadata Metadata, err error) {
+	reader, err = s.Get(ctx, filename)
 	if err != nil {
 		return
 	}
 
 	var mReader io.ReadCloser
 	mPath := fmt.Sprintf("%s.metadata", filename)
-	mReader, err = s.Get(mPath)
+	mReader, err = s.Get(ctx, mPath)
 	if err != nil {
 		return
 	}
@@ -69,7 +70,7 @@ func (s *LocalStorage) GetWithMetadata(filename string) (reader io.ReadCloser, m
 	return
 }
 
-func (s *LocalStorage) Put(filename string, reader io.Reader, metadata Metadata) error {
+func (s *LocalStorage) Put(ctx context.Context, filename string, reader io.Reader, metadata Metadata) error {
 	var f, mf io.WriteCloser
 	var err error
 
@@ -102,7 +103,7 @@ func (s *LocalStorage) Put(filename string, reader io.Reader, metadata Metadata)
 	return err
 }
 
-func (s *LocalStorage) Delete(filename string) error {
+func (s *LocalStorage) Delete(ctx context.Context, filename string) error {
 	path := filepath.Join(s.basedir, filename)
 	metadataPath := fmt.Sprintf("%s.metadata", path)
 	if err := os.Remove(path); err != nil {
@@ -114,7 +115,7 @@ func (s *LocalStorage) Delete(filename string) error {
 	return nil
 }
 
-func (s *LocalStorage) Purge(days time.Duration) error {
+func (s *LocalStorage) Purge(ctx context.Context, days time.Duration) error {
 	log.Println("Local storage: purging old files...")
 
 	err := filepath.Walk(s.basedir, func(path string, info os.FileInfo, err error) error {

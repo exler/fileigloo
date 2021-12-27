@@ -43,6 +43,16 @@ var (
 				} else {
 					serverOptions = append(serverOptions, server.UseStorage(storage))
 				}
+			case "storj":
+				bucket := viper.GetString("storj_bucket")
+				access := viper.GetString("storj_access")
+				purge_older := viper.GetInt("purge_older")
+
+				if storage, err := storage.NewStorjStorage(access, bucket, purge_older); err != nil {
+					log.Fatalln(err)
+				} else {
+					serverOptions = append(serverOptions, server.UseStorage(storage))
+				}
 			default:
 				log.Fatalln("Incorrect or no storage type chosen!")
 			}

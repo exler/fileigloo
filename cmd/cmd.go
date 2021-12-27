@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"log"
-	"time"
 
-	"github.com/getsentry/sentry-go"
 	colors "github.com/logrusorgru/aurora"
+	"github.com/rollbar/rollbar-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -22,26 +21,14 @@ func init() {
 
 	viper.AutomaticEnv()
 	viper.SetDefault("storage", "local")
+	viper.SetDefault("upload_directory", "uploads/")
+	viper.SetDefault("rate_limit", 2)
+	viper.SetDefault("purge_older", 24)
+	viper.SetDefault("purge_interval", 24)
 
-	viper.AddConfigPath("config/")
-	viper.SetConfigName("fileigloo")
-	viper.SetConfigType("yaml")
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Fatalln("Configuration file not found")
-		} else {
-			log.Fatalln("Unable to load configuration file")
-		}
-	}
-
-	err := sentry.Init(sentry.ClientOptions{
-		TracesSampleRate: 0.2,
-	})
-	if err != nil {
-		log.Fatalf("Sentry initialization error: %s", err)
-	}
-	// Flush buffered events before the program terminates
-	defer sentry.Flush(2 * time.Second)
+	// Setup Rollbar logging
+	rollbar.SetToken(viper.GetString("ROLLBAR_TOKEN"))
+	rollbar.SetEnvironment(viper.GetString("ROLLBAR_ENVIRONMENT"))
 
 	Cmd.AddCommand(versionCmd, serverCmd)
 }
