@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://unpkg.com/pcss-framework/dist/pcss.min.css">
 
     <style>
-        #alert {
+        .hidden {
             display: none;
         }
         
@@ -61,7 +61,7 @@
             </a>
         </center>
 
-        <div id="alert">
+        <div id="alert" class="hidden">
             <fieldset>
                 <legend>Message</legend>
                 <center></center>
@@ -70,24 +70,22 @@
 
         <section id="file-upload">
             <fieldset>
-                    <legend>File Upload</legend>
-                    <div id="file-select">
-                        <div id="file-select-button">Choose File</div>
-                        <div id="file-select-filename">No file chosen...</div>
-                        <input id="file-select-input" type="file" name="file" />
-                    </div>
-                    <button id="file-upload-button" type="submit">Upload</button>
+                <legend>File Upload</legend>
+                <div id="file-select">
+                    <div id="file-select-button">Choose File</div>
+                    <div id="file-select-filename">No file chosen...</div>
+                    <input id="file-select-input" type="file" name="file" />
+                </div>
+                <button id="file-upload-button" type="submit">Upload</button>
             </fieldset>
         </section>
 
         <section id="pastebin">
-            <div>
-                <fieldset>
-                    <legend>Pastebin</legend>
-                    <textarea id="pastebin-input" autocomplete="off" rows="8"></textarea>
-                    <button id="pastebin-button" type="submit">Create</button>
-                </fieldset>
-            </div>
+            <fieldset>
+                <legend>Pastebin</legend>
+                <textarea id="pastebin-input" autocomplete="off" rows="8"></textarea>
+                <button id="pastebin-button" type="submit">Create</button>
+            </fieldset>
         </section>
 
         <footer>
@@ -96,11 +94,23 @@
         </footer>
     </main>
     <script>
+        function progressHandler(event) {
+            let percent = (event.loaded / event.total) * 100;
+            let message;
+            if (percent < 100) {
+                message = `Uploading ${percent}% complete...`;
+            } else {
+                message = "Upload complete! Download link will appear shortly..."
+            }
+            displayAlert(message);
+        }
+
         function upload(content, type = "file") {
             const url = "/";
             const request = new XMLHttpRequest();
             const fd = new FormData();
 
+            request.upload.addEventListener("progress", progressHandler, false);
             request.open("POST", url, true);
             request.onreadystatechange = function() {
                 if (request.readyState == 4 && request.status == 200) {
@@ -138,10 +148,20 @@
 
             let fileSelect = document.getElementById("file-select");
             let fileInput = document.getElementById("file-select-input");
+            let selectFilename = document.getElementById("file-select-filename");
+            let page = document.querySelector("html")
             fileSelect.onclick = function() { fileInput.click(); }
+            fileSelect.ondragover = function(event) { event.stopPropagation(); event.preventDefault(); }
+            fileSelect.ondrop = function(event) {
+                event.stopPropagation();
+                event.preventDefault();
+                let dt = event.dataTransfer; 
+                let file = dt.files[0];
+                selectFilename.innerText = file.name;
+                upload(file, "file")
+            }
             fileInput.onchange = function() {
                 let filename = fileInput.files[0].name;
-                let selectFilename = document.getElementById("file-select-filename");
                 selectFilename.innerText = filename;
             }
 

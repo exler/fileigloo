@@ -13,14 +13,57 @@
 
 * Go >= 1.16
 
-## Usage
+## Configuration
 
-Common configuration is in the [config/fileigloo.yaml](config/fileigloo.yaml) file. All of the configuration there, as well as flags passed to the program can be overriden by setting an environment variable (in uppercase). For example:
+All configuration is done through environment variables.
+
+### Local storage
 
 ```bash
-# Overrides the storage provider
-$ export STORAGE=s3
+# Override storage provider
+$ export STORAGE=local
+
+# Provide directory where uploaded files should be stored
+$ export UPLOAD_DIRECTORY=uploads/
+
+# Check every 24 hours for files older than 24 hours and delete them
+$ export PURGE_INTERVAL=24
+$ export PURGE_OLDER=24
 ```
+
+## S3
+
+```bash
+# Override storage provider
+$ export STORAGE=s3
+
+# Specify S3 bucket and region
+$ export S3_BUCKET=storage-bucket
+$ export S3_REGION=eu-central-1
+
+# Specify AWS keys for accessing S3
+$ export AWS_ACCESS_KEY=
+$ export AWS_SECRET_KEY=
+
+# Optionally, specify AWS session token for temporary credentials
+$ export AWS_SESSION_TOKEN=
+```
+
+## Storj
+
+```bash
+# Override storage provider
+$ export STORAGE=storj
+
+# Specify Storj bucket and its access key
+$ export STORJ_BUCKET=storage-bucket
+$ export STORJ_ACCESS=
+
+# Provide expiration date for files (in hours)
+$ export PURGE_OLDER=24
+```
+
+## Usage
 
 ### Program usage
 
