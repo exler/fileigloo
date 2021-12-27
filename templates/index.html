@@ -95,7 +95,7 @@
     </main>
     <script>
         function progressHandler(event) {
-            let percent = (event.loaded / event.total) * 100;
+            let percent = Math.round((event.loaded / event.total) * 100);
             let message;
             if (percent < 100) {
                 message = `Uploading ${percent}% complete...`;
