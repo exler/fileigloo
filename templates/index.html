@@ -110,7 +110,10 @@
             const request = new XMLHttpRequest();
             const fd = new FormData();
 
-            request.upload.addEventListener("progress", progressHandler, false);
+            if (type === "file") {
+                // Omit progress indicator for pastebin as uploads are near instant
+                request.upload.addEventListener("progress", progressHandler, false);
+            }
             request.open("POST", url, true);
             request.onreadystatechange = function() {
                 if (request.readyState == 4 && request.status == 200) {
