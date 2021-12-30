@@ -32,6 +32,11 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "multipart/form-data" {
+		http.Error(w, "Request Content-Type must be 'multipart/form-data'", http.StatusBadRequest)
+		return
+	}
+
 	if err := r.ParseMultipartForm(_128K); err != nil {
 		rollbar.Error(err)
 		log.Println(err.Error())
