@@ -32,7 +32,7 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Content-Type") != "multipart/form-data" {
+	if !ValidateContentType(r.Header) {
 		http.Error(w, "Request Content-Type must be 'multipart/form-data'", http.StatusBadRequest)
 		return
 	}

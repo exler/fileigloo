@@ -18,6 +18,16 @@ func SanitizeFilename(filename string) string {
 	return path.Clean(path.Base(filename))
 }
 
+func ValidateContentType(h http.Header) bool {
+	contentType := h.Get("Content-Type")
+	if contentType == "" {
+		return false
+	}
+
+	contentTypeWithoutBoundary := strings.Split(contentType, ";")[0]
+	return contentTypeWithoutBoundary == "multipart/form-data"
+}
+
 func CleanTempFile(file *os.File) {
 	if file != nil {
 		if err := file.Close(); err != nil {
