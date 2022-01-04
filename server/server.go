@@ -95,7 +95,8 @@ func (s *Server) Run() {
 	go func() {
 		err := srv.ListenAndServe()
 		if err != nil {
-			log.Fatalln(err.Error())
+			log.Println(err.Error())
+			return
 		}
 	}()
 

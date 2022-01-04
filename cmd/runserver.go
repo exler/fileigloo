@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"os"
 
 	"github.com/exler/fileigloo/server"
 	"github.com/exler/fileigloo/storage"
@@ -25,9 +26,11 @@ var (
 			switch storageProvider := viper.GetString("storage"); storageProvider {
 			case "local":
 				if udir := viper.GetString("upload_directory"); udir == "" {
-					log.Fatalln("Upload directory must be set for local storage!")
+					log.Println("Upload directory must be set for local storage!")
+					os.Exit(0)
 				} else if storage, err := storage.NewLocalStorage(udir, viper.GetInt("purge_interval"), viper.GetInt("purge_older")); err != nil {
-					log.Fatalln(err)
+					log.Println(err)
+					os.Exit(1)
 				} else {
 					serverOptions = append(serverOptions, server.UseStorage(storage))
 				}
@@ -39,7 +42,8 @@ var (
 				sessionToken := viper.GetString("aws_session_token")
 
 				if storage, err := storage.NewS3Storage(accessKey, secretKey, sessionToken, region, bucket); err != nil {
-					log.Fatalln(err)
+					log.Println(err)
+					os.Exit(1)
 				} else {
 					serverOptions = append(serverOptions, server.UseStorage(storage))
 				}
@@ -49,12 +53,14 @@ var (
 				purge_older := viper.GetInt("purge_older")
 
 				if storage, err := storage.NewStorjStorage(access, bucket, purge_older); err != nil {
-					log.Fatalln(err)
+					log.Println(err)
+					os.Exit(1)
 				} else {
 					serverOptions = append(serverOptions, server.UseStorage(storage))
 				}
 			default:
-				log.Fatalln("Incorrect or no storage type chosen!")
+				log.Println("Incorrect or no storage type chosen!")
+				os.Exit(0)
 			}
 
 			srv := server.New(serverOptions...)
