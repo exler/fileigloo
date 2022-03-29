@@ -1,0 +1,15 @@
+# Ignore build files
+build
+pkg
+bin
+node_modules
+dist
+
+# Cache
+.cache
+*.pyc
+*.egg-info
+
+# Other
+.tmp
+Dockerfile

@@ -1,0 +1,34 @@
+name: Quality
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  gosec:
+    name: Gosec
+
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./...
+
+  staticcheck:
+    name: Staticcheck
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run Staticcheck
+        uses: dominikh/staticcheck-action@v1.1.0
+        with:
+          version: "2021.1.1"
