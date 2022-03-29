@@ -112,5 +112,5 @@ func (s *Server) Run() {
 	defer cancel()
 
 	// Does not block if no connections, otherwises waits for timeout
-	srv.Shutdown(ctx)
+	srv.Shutdown(ctx) //#nosec
 }

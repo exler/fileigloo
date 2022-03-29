@@ -35,7 +35,7 @@ func NewLocalStorage(basedir string, purgeInterval, purgeOlder int) (*LocalStora
 	}
 
 	if purgeInterval != 0 {
-		storage.scheduler.Every(storage.purgeInterval).Hours().Do(storage.Purge, storage.purgeOlder)
+		storage.scheduler.Every(storage.purgeInterval).Hours().Do(storage.Purge, storage.purgeOlder) //#nosec
 	}
 
 	storage.scheduler.StartAsync()
@@ -49,7 +49,7 @@ func (s *LocalStorage) Type() string {
 
 func (s *LocalStorage) Get(ctx context.Context, filename string) (reader io.ReadCloser, err error) {
 	path := filepath.Join(s.basedir, filename)
-	reader, err = os.Open(path)
+	reader, err = os.Open(path) //#nosec
 	return
 }
 
@@ -79,6 +79,7 @@ func (s *LocalStorage) Put(ctx context.Context, filename string, reader io.Reade
 	}
 
 	path := filepath.Join(s.basedir, filename)
+	//#nosec
 	if f, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600); err != nil {
 		return err
 	}
@@ -94,6 +95,7 @@ func (s *LocalStorage) Put(ctx context.Context, filename string, reader io.Reade
 		return err
 	}
 
+	//#nosec
 	if mf, err = os.OpenFile(metadataPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600); err != nil {
 		return err
 	}

@@ -43,7 +43,7 @@ func NewStorjStorage(access, bucket string, purgeOlder int) (*StorjStorage, erro
 
 	instance.bucket, err = instance.project.EnsureBucket(ctx, bucket)
 	if err != nil {
-		instance.project.Close()
+		instance.project.Close() //#nosec
 		return nil, err
 	}
 

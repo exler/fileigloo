@@ -11,7 +11,7 @@ func SendJSON(w http.ResponseWriter, data interface{}) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(response)
+	w.Write(response) //#nosec
 }
 
 func SendPlain(w http.ResponseWriter, data string) {
@@ -21,5 +21,5 @@ func SendPlain(w http.ResponseWriter, data string) {
 
 	response := []byte(data)
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write(response)
+	w.Write(response) //#nosec
 }

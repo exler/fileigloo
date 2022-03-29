@@ -72,6 +72,6 @@ var (
 func init() {
 	serverCmd.Flags().Int("port", 8000, "Port to run the server on")
 	serverCmd.Flags().Bool("https-only", false, "Automatically make all URLs with HTTPS schema")
-	viper.BindPFlag("port", serverCmd.Flags().Lookup("port"))
-	viper.BindPFlag("https-only", serverCmd.Flags().Lookup("https-only"))
+	viper.BindPFlag("port", serverCmd.Flags().Lookup("port"))             //#nosec
+	viper.BindPFlag("https-only", serverCmd.Flags().Lookup("https-only")) //#nosec
 }
