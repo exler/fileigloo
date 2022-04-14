@@ -28,7 +28,7 @@ var (
 				if udir := viper.GetString("upload_directory"); udir == "" {
 					log.Println("Upload directory must be set for local storage!")
 					os.Exit(0)
-				} else if storage, err := storage.NewLocalStorage(udir, viper.GetInt("purge_interval"), viper.GetInt("purge_older")); err != nil {
+				} else if storage, err := storage.NewLocalStorage(udir); err != nil {
 					log.Println(err)
 					os.Exit(1)
 				} else {
@@ -50,9 +50,8 @@ var (
 			case "storj":
 				bucket := viper.GetString("storj_bucket")
 				access := viper.GetString("storj_access")
-				purge_older := viper.GetInt("purge_older")
 
-				if storage, err := storage.NewStorjStorage(access, bucket, purge_older); err != nil {
+				if storage, err := storage.NewStorjStorage(access, bucket); err != nil {
 					log.Println(err)
 					os.Exit(1)
 				} else {

@@ -23,10 +23,6 @@ $ export STORAGE=local
 
 # Provide directory where uploaded files should be stored
 $ export UPLOAD_DIRECTORY=uploads/
-
-# Check every 24 hours for files older than 24 hours and delete them
-$ export PURGE_INTERVAL=24
-$ export PURGE_OLDER=24
 ```
 
 ## S3
@@ -56,9 +52,6 @@ $ export STORAGE=storj
 # Specify Storj bucket and its access key
 $ export STORJ_BUCKET=storage-bucket
 $ export STORJ_ACCESS=
-
-# Provide expiration date for files (in hours)
-$ export PURGE_OLDER=24
 ```
 
 ## Usage

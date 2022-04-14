@@ -23,8 +23,6 @@ func init() {
 	viper.SetDefault("storage", "local")
 	viper.SetDefault("upload_directory", "uploads/")
 	viper.SetDefault("rate_limit", 2)
-	viper.SetDefault("purge_older", 24)
-	viper.SetDefault("purge_interval", 24)
 
 	// Setup Rollbar logging
 	rollbar.SetToken(viper.GetString("ROLLBAR_TOKEN"))

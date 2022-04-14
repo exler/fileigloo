@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"time"
 
 	"storj.io/common/fpath"
 	"storj.io/uplink"
@@ -12,16 +11,15 @@ import (
 
 type StorjStorage struct {
 	Storage
-	project    *uplink.Project
-	bucket     *uplink.Bucket
-	purgeOlder time.Duration
+	project *uplink.Project
+	bucket  *uplink.Bucket
 }
 
 func (s *StorjStorage) Type() string {
 	return "storj"
 }
 
-func NewStorjStorage(access, bucket string, purgeOlder int) (*StorjStorage, error) {
+func NewStorjStorage(access, bucket string) (*StorjStorage, error) {
 	var instance StorjStorage
 	var err error
 	tempCtx := context.TODO()
@@ -46,8 +44,6 @@ func NewStorjStorage(access, bucket string, purgeOlder int) (*StorjStorage, erro
 		instance.project.Close() //#nosec
 		return nil, err
 	}
-
-	instance.purgeOlder = time.Duration(purgeOlder) * time.Hour
 
 	return &instance, nil
 
@@ -76,9 +72,6 @@ func (s *StorjStorage) GetWithMetadata(ctx context.Context, filename string) (re
 
 func (s *StorjStorage) Put(ctx context.Context, filename string, reader io.Reader, metadata Metadata) error {
 	var uploadOptions *uplink.UploadOptions
-	if s.purgeOlder.Hours() > 0 {
-		uploadOptions = &uplink.UploadOptions{Expires: time.Now().Add(s.purgeOlder)}
-	}
 
 	writer, err := s.project.UploadObject(fpath.WithTempData(ctx, "", true), s.bucket.Name, filename, uploadOptions)
 	if err != nil {
@@ -104,10 +97,6 @@ func (s *StorjStorage) Put(ctx context.Context, filename string, reader io.Reade
 func (s *StorjStorage) Delete(ctx context.Context, filename string) error {
 	_, err := s.project.DeleteObject(fpath.WithTempData(ctx, "", true), s.bucket.Name, filename)
 	return err
-}
-
-func (s *StorjStorage) Purge(ctx context.Context, days time.Duration) error {
-	return nil
 }
 
 func (s *StorjStorage) FileNotExists(err error) bool {

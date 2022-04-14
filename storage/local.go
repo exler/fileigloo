@@ -6,39 +6,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
-	"time"
-
-	"github.com/go-co-op/gocron"
 )
 
 type LocalStorage struct {
 	Storage
-	scheduler     *gocron.Scheduler
-	basedir       string
-	purgeInterval int
-	purgeOlder    time.Duration
+	basedir string
 }
 
-func NewLocalStorage(basedir string, purgeInterval, purgeOlder int) (*LocalStorage, error) {
+func NewLocalStorage(basedir string) (*LocalStorage, error) {
 	if basedir[len(basedir)-1:] != "/" {
 		basedir += "/"
 	}
 
 	storage := &LocalStorage{
-		basedir:       basedir,
-		scheduler:     gocron.NewScheduler(time.UTC),
-		purgeInterval: purgeInterval,
-		purgeOlder:    time.Duration(purgeOlder) * time.Hour,
+		basedir: basedir,
 	}
-
-	if purgeInterval != 0 {
-		storage.scheduler.Every(storage.purgeInterval).Hours().Do(storage.Purge, storage.purgeOlder) //#nosec
-	}
-
-	storage.scheduler.StartAsync()
 
 	return storage, nil
 }
@@ -115,29 +99,6 @@ func (s *LocalStorage) Delete(ctx context.Context, filename string) error {
 	}
 
 	return nil
-}
-
-func (s *LocalStorage) Purge(ctx context.Context, days time.Duration) error {
-	log.Println("Local storage: purging old files...")
-
-	err := filepath.Walk(s.basedir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		if info.ModTime().Before(time.Now().Add(-1 * days)) {
-			err = os.Remove(path)
-			return err
-		}
-
-		return nil
-	})
-
-	return err
 }
 
 func (s *LocalStorage) FileNotExists(err error) bool {

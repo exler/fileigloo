@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"io"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -94,10 +93,6 @@ func (s *S3Storage) Delete(ctx context.Context, filename string) error {
 	_, err := s.s3.DeleteObject(r)
 
 	return err
-}
-
-func (s *S3Storage) Purge(ctx context.Context, days time.Duration) error {
-	return nil
 }
 
 func (s *S3Storage) FileNotExists(err error) bool {

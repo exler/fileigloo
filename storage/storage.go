@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"strconv"
-	"time"
 )
 
 type Metadata struct {
@@ -48,7 +47,6 @@ type Storage interface {
 	GetWithMetadata(ctx context.Context, filename string) (reader io.ReadCloser, metadata Metadata, err error)
 	Put(ctx context.Context, filename string, reader io.Reader, metadata Metadata) error
 	Delete(ctx context.Context, filename string) error
-	Purge(ctx context.Context, days time.Duration) error
 	FileNotExists(err error) bool
 	Type() string
 }

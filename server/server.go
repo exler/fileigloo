@@ -43,7 +43,6 @@ func Port(port int) OptionFn {
 
 func HTTPSOnly(httpsOnly bool) OptionFn {
 	return func(s *Server) {
-		log.Printf("HTTPS only: %t\n", httpsOnly)
 		s.httpsOnly = httpsOnly
 	}
 }
@@ -66,9 +65,6 @@ func New(options ...OptionFn) *Server {
 	for _, optionFn := range options {
 		optionFn(s)
 	}
-
-	log.Printf("Storage type: %s\n", s.storage.Type())
-
 	return s
 }
 
@@ -90,7 +86,7 @@ func (s *Server) Run() {
 		IdleTimeout:  time.Second * 60,
 		Handler:      tollbooth.LimitHandler(limiter, s.router),
 	}
-	log.Println("http: Server started")
+	log.Printf("Server started [httpsOnly=%t, storage=%s]", s.httpsOnly, s.storage.Type())
 
 	go func() {
 		err := srv.ListenAndServe()
