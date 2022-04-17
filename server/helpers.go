@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"io"
 	"log"
-	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 )
 
@@ -71,14 +69,13 @@ func GetUpload(r *http.Request) (file io.Reader, filename, contentType string, c
 	var fheader *multipart.FileHeader
 	if file, fheader, err = r.FormFile("file"); err == nil {
 		filename = SanitizeFilename(fheader.Filename)
-		contentType = mime.TypeByExtension(filepath.Ext(fheader.Filename))
+		contentType = fheader.Header.Get("Content-Type")
 		contentLength = fheader.Size
 	} else if text := r.FormValue("text"); text != "" {
 		err = nil
-
 		buf := []byte(text)
-		file = bytes.NewReader(buf)
 
+		file = bytes.NewReader(buf)
 		filename = "Paste"
 		contentType = "text/plain"
 		contentLength = int64(len(buf))
