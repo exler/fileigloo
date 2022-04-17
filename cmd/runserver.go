@@ -20,7 +20,6 @@ var (
 				server.Port(viper.GetInt("port")),
 				server.MaxUploadSize(viper.GetInt64("max_upload_size")),
 				server.RateLimit(viper.GetInt("rate_limit")),
-				server.HTTPSOnly(viper.GetBool("https-only")),
 			}
 
 			switch storageProvider := viper.GetString("storage"); storageProvider {

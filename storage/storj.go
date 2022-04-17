@@ -66,7 +66,11 @@ func (s *StorjStorage) GetWithMetadata(ctx context.Context, filename string) (re
 	}
 
 	reader = download
-	metadata = MakeMetadata(download.Info().Custom["Filename"], download.Info().Custom["Content-Type"], download.Info().System.ContentLength)
+	metadata = MakeMetadata(
+		download.Info().Custom["Filename"],
+		download.Info().Custom["Content-Type"],
+		download.Info().System.ContentLength,
+	)
 	return
 }
 

@@ -93,7 +93,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := s.GetDownloadURL(r, fileUrl)
-	rollbar.Info(fmt.Sprintf("New file uploaded: %s", response))
+	log.Printf("New file uploaded [url=%s]\n", response)
 
 	SendPlain(w, response)
 }

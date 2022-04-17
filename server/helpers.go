@@ -56,7 +56,7 @@ func ShowInline(contentType string) bool {
 
 func (s *Server) GetDownloadURL(r *http.Request, fileUrl *url.URL) string {
 	fileUrl.Host = r.Host
-	if s.httpsOnly || r.TLS != nil {
+	if r.TLS != nil {
 		fileUrl.Scheme = "https"
 	} else if scheme := r.Header.Get("X-Forwarded-Proto"); scheme != "" {
 		fileUrl.Scheme = scheme

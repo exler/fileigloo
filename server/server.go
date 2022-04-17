@@ -41,15 +41,7 @@ func Port(port int) OptionFn {
 	}
 }
 
-func HTTPSOnly(httpsOnly bool) OptionFn {
-	return func(s *Server) {
-		s.httpsOnly = httpsOnly
-	}
-}
-
 type Server struct {
-	httpsOnly bool
-
 	router *mux.Router
 
 	storage storage.Storage
@@ -86,7 +78,7 @@ func (s *Server) Run() {
 		IdleTimeout:  time.Second * 60,
 		Handler:      tollbooth.LimitHandler(limiter, s.router),
 	}
-	log.Printf("Server started [httpsOnly=%t, storage=%s]", s.httpsOnly, s.storage.Type())
+	log.Printf("Server started [storage=%s]", s.storage.Type())
 
 	go func() {
 		err := srv.ListenAndServe()

@@ -7,7 +7,7 @@ import (
 )
 
 type Metadata struct {
-	Filename      string // original filename
+	Filename      string // Original filename
 	ContentType   string
 	ContentLength string
 }
