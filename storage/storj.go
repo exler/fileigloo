@@ -70,6 +70,22 @@ func (s *StorjStorage) GetWithMetadata(ctx context.Context, filename string) (re
 		download.Info().Custom["Filename"],
 		download.Info().Custom["Content-Type"],
 		download.Info().System.ContentLength,
+		download.Info().Custom["Delete-Token"],
+	)
+	return
+}
+
+func (s *StorjStorage) GetOnlyMetadata(ctx context.Context, filename string) (metadata Metadata, err error) {
+	info, err := s.project.StatObject(fpath.WithTempData(ctx, "", true), s.bucket.Name, filename)
+	if err != nil {
+		return
+	}
+
+	metadata = MakeMetadata(
+		info.Custom["Filename"],
+		info.Custom["Content-Type"],
+		info.System.ContentLength,
+		info.Custom["Delete-Token"],
 	)
 	return
 }

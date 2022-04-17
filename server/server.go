@@ -70,6 +70,7 @@ func (s *Server) Run() {
 	s.router.HandleFunc("/", s.uploadHandler).Methods("POST").Name("upload")
 	s.router.HandleFunc("/{view:(?:view)}/{fileId}", s.downloadHandler).Methods("GET").Name("view")
 	s.router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET").Name("download")
+	s.router.HandleFunc("/{fileId}/{deleteToken}", s.deleteHandler).Methods("DELETE").Name("delete")
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.port),

@@ -1,6 +1,6 @@
 <p align="center">
     <img src="public/logo.svg" width="128">
-    <p align="center">❄️ Small and simple temporary file sharing & pastebin</p>
+    <p align="center">❄️ Small and simple online file sharing & pastebin</p>
     <p align="center">
       <img alt="GitHub Test Workflow Status" src="https://img.shields.io/github/workflow/status/exler/fileigloo/Test">
       <img alt="MIT License" src="https://img.shields.io/github/license/exler/fileigloo?color=lightblue">
@@ -97,6 +97,12 @@ $ curl http://localhost:8000/M7JeqHRk3uw0
 
 # Write to file
 $ curl -o output.txt http://localhost:8000/M7JeqHRk3uw0
+```
+
+* Delete file
+
+```
+$ curl -X DELETE <value from Delete-Url header>
 ```
 
 ## License

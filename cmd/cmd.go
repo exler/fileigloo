@@ -11,8 +11,8 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "fileigloo",
-	Short: "Small and simple temporary file sharing & pastebin",
-	Long: `Small and simple temporary file sharing & pastebin. 
+	Short: "Small and simple online file sharing & pastebin",
+	Long: `Small and simple online file sharing & pastebin. 
 Source code available at github.com/exler/fileigloo`,
 }
 

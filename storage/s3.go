@@ -69,6 +69,20 @@ func (s *S3Storage) GetWithMetadata(ctx context.Context, filename string) (reade
 	return
 }
 
+func (s *S3Storage) GetOnlyMetadata(ctx context.Context, filename string) (metadata Metadata, err error) {
+	r := &s3.HeadObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(filename),
+	}
+
+	response, err := s.s3.HeadObject(r)
+	if err != nil {
+		return
+	}
+	metadata = StringMapToMetadata(response.Metadata)
+	return
+}
+
 func (s *S3Storage) Put(ctx context.Context, filename string, reader io.Reader, metadata Metadata) error {
 	uploader := s3manager.NewUploader(s.session, func(u *s3manager.Uploader) {
 		u.LeavePartsOnError = false

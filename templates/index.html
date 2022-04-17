@@ -117,7 +117,8 @@
             request.open("POST", url, true);
             request.onreadystatechange = function() {
                 if (request.readyState == 4 && request.status == 200) {
-                    let message = `Upload successful: <a href="${request.responseText}">${request.responseText}</a>`
+                    let downloadUrl = request.responseText;
+                    let message = `Upload successful: <a href="${downloadUrl}">${downloadUrl}</a>`;
                     displayAlert(message);
                 } else {
                     displayAlert(request.responseText);

@@ -27,6 +27,10 @@ func generateFileId() string {
 	return random.String(12)
 }
 
+func generateToken() string {
+	return random.String(6)
+}
+
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "index")
 }
@@ -70,7 +74,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	metadata := storage.MakeMetadata(filename, contentType, contentLength)
+	metadata := storage.MakeMetadata(filename, contentType, contentLength, generateToken())
 	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
 		rollbar.Error(err)
 		log.Println(err.Error())
@@ -80,21 +84,16 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	var fileUrl *url.URL
 	if ShowInline(contentType) {
-		fileUrl, err = s.router.Get("view").URL("view", "view", "fileId", fileId)
+		fileUrl, _ = s.router.Get("view").URL("view", "view", "fileId", fileId)
 	} else {
-		fileUrl, err = s.router.Get("download").URL("fileId", fileId)
+		fileUrl, _ = s.router.Get("download").URL("fileId", fileId)
 	}
 
-	if err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	response := s.GetDownloadURL(r, fileUrl)
+	response := s.GetFullURL(r, fileUrl)
 	log.Printf("New file uploaded [url=%s]\n", response)
 
+	deleteUrl, _ := s.router.Get("delete").URL("fileId", fileId, "deleteToken", metadata.DeleteToken)
+	w.Header().Add("Delete-URL", s.GetFullURL(r, deleteUrl))
 	SendPlain(w, response)
 }
 
@@ -154,4 +153,33 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeContent(w, r, metadata.Filename, time.Now(), file)
+}
+
+func (s *Server) deleteHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	fileId := SanitizeFilename(vars["fileId"])
+	deleteToken := vars["deleteToken"]
+
+	metadata, err := s.storage.GetOnlyMetadata(r.Context(), fileId)
+	if s.storage.FileNotExists(err) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	} else if err != nil {
+		rollbar.Error(err)
+		log.Println(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if deleteToken != metadata.DeleteToken {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	if err := s.storage.Delete(r.Context(), fileId); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	SendPlain(w, "File deleted")
 }

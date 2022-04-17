@@ -28,7 +28,7 @@ func NewLocalStorage(basedir string) (*LocalStorage, error) {
 }
 
 func (s *LocalStorage) Type() string {
-	return "local storage"
+	return "local"
 }
 
 func (s *LocalStorage) Get(ctx context.Context, filename string) (reader io.ReadCloser, err error) {
@@ -49,6 +49,20 @@ func (s *LocalStorage) GetWithMetadata(ctx context.Context, filename string) (re
 	if err != nil {
 		return
 	}
+	defer mReader.Close()
+
+	err = json.NewDecoder(mReader).Decode(&metadata)
+	return
+}
+
+func (s *LocalStorage) GetOnlyMetadata(ctx context.Context, filename string) (metadata Metadata, err error) {
+	var mReader io.ReadCloser
+	mPath := fmt.Sprintf("%s.metadata", filename)
+	mReader, err = s.Get(ctx, mPath)
+	if err != nil {
+		return
+	}
+	defer mReader.Close()
 
 	err = json.NewDecoder(mReader).Decode(&metadata)
 	return
