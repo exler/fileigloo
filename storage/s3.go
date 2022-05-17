@@ -19,8 +19,9 @@ type S3Storage struct {
 	bucket  string
 }
 
-func newAWSSession(accessKey, secretKey, sessionToken, region string) *session.Session {
+func newAWSSession(accessKey, secretKey, sessionToken, endpointUrl, region string) *session.Session {
 	return session.Must(session.NewSession(&aws.Config{
+		Endpoint:    aws.String(endpointUrl),
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, sessionToken),
 	}))
@@ -30,8 +31,8 @@ func (s *S3Storage) Type() string {
 	return "s3"
 }
 
-func NewS3Storage(accessKey, secretKey, sessionToken, region, bucket string) (*S3Storage, error) {
-	session := newAWSSession(accessKey, secretKey, sessionToken, region)
+func NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket string) (*S3Storage, error) {
+	session := newAWSSession(accessKey, secretKey, sessionToken, endpointUrl, region)
 
 	return &S3Storage{
 		s3:      s3.New(session),

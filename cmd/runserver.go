@@ -39,8 +39,9 @@ var (
 				accessKey := viper.GetString("aws_access_key")
 				secretKey := viper.GetString("aws_secret_key")
 				sessionToken := viper.GetString("aws_session_token")
+				endpointUrl := viper.GetString("aws_endpoint_url")
 
-				if storage, err := storage.NewS3Storage(accessKey, secretKey, sessionToken, region, bucket); err != nil {
+				if storage, err := storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket); err != nil {
 					log.Println(err)
 					os.Exit(1)
 				} else {

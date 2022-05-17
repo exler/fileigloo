@@ -25,7 +25,7 @@ $ export STORAGE=local
 $ export UPLOAD_DIRECTORY=uploads/
 ```
 
-## S3
+### S3
 
 ```bash
 # Override storage provider
@@ -43,7 +43,29 @@ $ export AWS_SECRET_KEY=
 $ export AWS_SESSION_TOKEN=
 ```
 
-## Storj
+### Cloudflare R2
+
+Cloudflare R2 implements S3 API, so we use the `s3` storage here as well.
+
+```bash
+# Override storage provider
+$ export STORAGE=s3
+
+# Specify R2 bucket
+$ export S3_BUCKET=storage-bucket
+
+# Region must be 'auto'
+$ export S3_REGION=auto
+
+# Specify R2 keys for accessing the bucket
+$ export AWS_ACCESS_KEY=
+$ export AWS_SECRET_KEY=
+
+# Specify the bucket URL
+$ export AWS_ENDPOINT_URL=https://${accountid}.r2.cloudflarestorage.com
+```
+
+### Storj
 
 ```bash
 # Override storage provider
@@ -107,6 +129,6 @@ $ curl -X DELETE <value from Delete-Url header>
 
 ## License
 
-Copyright (c) 2021 by ***Kamil Marut***
+Copyright (c) 2021-2022 by ***Kamil Marut***
 
 `Fileigloo` is under the terms of the [MIT License](https://www.tldrlegal.com/l/mit), following all clarifications stated in the [license file](LICENSE).
