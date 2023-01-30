@@ -3,9 +3,9 @@ package server
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -111,7 +111,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	if _, ok := vars["view"]; ok {
 		fileDisposition = "inline"
 		if strings.HasPrefix(metadata.ContentType, "text/") {
-			reader = ioutil.NopCloser(bluemonday.UGCPolicy().SanitizeReader(reader))
+			reader = io.NopCloser(bluemonday.UGCPolicy().SanitizeReader(reader))
 		}
 	} else {
 		fileDisposition = "attachment"
@@ -122,7 +122,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%s", fileDisposition, metadata.Filename))
 
 	// Obtain FileSeeker
-	file, err := ioutil.TempFile("", "fileigloo-get-")
+	file, err := os.CreateTemp("", "fileigloo-get-")
 	if err != nil {
 		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
