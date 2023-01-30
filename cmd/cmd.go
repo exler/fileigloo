@@ -3,8 +3,7 @@ package cmd
 import (
 	"log"
 
-	colors "github.com/logrusorgru/aurora"
-	"github.com/rollbar/rollbar-go"
+	"github.com/getsentry/sentry-go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,16 +16,20 @@ Source code available at github.com/exler/fileigloo`,
 }
 
 func init() {
-	log.SetPrefix(colors.Blue("[fileigloo] ").String())
-
 	viper.AutomaticEnv()
-	viper.SetDefault("storage", "local")
-	viper.SetDefault("upload_directory", "uploads/")
-	viper.SetDefault("rate_limit", 2)
+	viper.SetDefault("STORAGE", "local")
+	viper.SetDefault("UPLOAD_DIRECTORY", "uploads/")
+	viper.SetDefault("RATE_LIMIT", 2)
 
-	// Setup Rollbar logging
-	rollbar.SetToken(viper.GetString("ROLLBAR_TOKEN"))
-	rollbar.SetEnvironment(viper.GetString("ROLLBAR_ENVIRONMENT"))
+	if sentry_dsn := viper.GetString("SENTRY_DSN"); sentry_dsn != "" {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn: sentry_dsn,
+		})
+
+		if err != nil {
+			log.Fatalf("sentry.Init: %s", err)
+		}
+	}
 
 	Cmd.AddCommand(versionCmd, serverCmd)
 }

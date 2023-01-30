@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -35,6 +34,12 @@ func UseStorage(storage storage.Storage) OptionFn {
 	}
 }
 
+func CreateLogger(logger *Logger) OptionFn {
+	return func(s *Server) {
+		s.logger = logger
+	}
+}
+
 func Port(port int) OptionFn {
 	return func(s *Server) {
 		s.port = port
@@ -42,6 +47,8 @@ func Port(port int) OptionFn {
 }
 
 type Server struct {
+	logger *Logger
+
 	router *mux.Router
 
 	storage storage.Storage
@@ -79,12 +86,12 @@ func (s *Server) Run() {
 		IdleTimeout:  time.Second * 60,
 		Handler:      tollbooth.LimitHandler(limiter, s.router),
 	}
-	log.Printf("Server started [storage=%s]", s.storage.Type())
+	s.logger.Info(fmt.Sprintf("Server started [storage=%s]", s.storage.Type()))
 
 	go func() {
 		err := srv.ListenAndServe()
 		if err != nil {
-			log.Println(err.Error())
+			s.logger.Error(err)
 			return
 		}
 	}()

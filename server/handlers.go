@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,7 +13,6 @@ import (
 	"github.com/exler/fileigloo/storage"
 	"github.com/gorilla/mux"
 	"github.com/microcosm-cc/bluemonday"
-	"github.com/rollbar/rollbar-go"
 )
 
 // 128 Kilobits
@@ -42,8 +40,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseMultipartForm(_128K); err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -53,8 +50,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err == http.ErrMissingFile {
 			http.Error(w, "Request is missing `file` or `text` parameters", http.StatusBadRequest)
 		} else {
-			rollbar.Error(err)
-			log.Println(err.Error())
+			s.logger.Error(err)
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 
@@ -76,8 +72,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	metadata := storage.MakeMetadata(filename, contentType, contentLength, generateToken())
 	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -90,7 +85,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := s.GetFullURL(r, fileUrl)
-	log.Printf("New file uploaded [url=%s]\n", response)
+	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", response))
 
 	deleteUrl, _ := s.router.Get("delete").URL("fileId", fileId, "deleteToken", metadata.DeleteToken)
 	w.Header().Add("Delete-URL", s.GetFullURL(r, deleteUrl))
@@ -106,8 +101,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	} else if err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -130,8 +124,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	// Obtain FileSeeker
 	file, err := ioutil.TempFile("", "fileigloo-get-")
 	if err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -145,8 +138,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err != nil {
-			rollbar.Error(err)
-			log.Println(err.Error())
+			s.logger.Error(err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -165,8 +157,7 @@ func (s *Server) deleteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	} else if err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
