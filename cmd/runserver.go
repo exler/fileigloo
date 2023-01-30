@@ -17,14 +17,14 @@ var (
 		Long:  "Run web server allowing to upload files and pastes via API or browser",
 		Run: func(cmd *cobra.Command, args []string) {
 			serverOptions := []server.OptionFn{
-				server.Port(viper.GetInt("port")),
-				server.MaxUploadSize(viper.GetInt64("max_upload_size")),
-				server.RateLimit(viper.GetInt("rate_limit")),
+				server.Port(viper.GetInt("PORT")),
+				server.MaxUploadSize(viper.GetInt64("MAX_UPLOAD_SIZE")),
+				server.RateLimit(viper.GetInt("RATE_LIMIT")),
 			}
 
-			switch storageProvider := viper.GetString("storage"); storageProvider {
+			switch storageProvider := viper.GetString("STORAGE"); storageProvider {
 			case "local":
-				if udir := viper.GetString("upload_directory"); udir == "" {
+				if udir := viper.GetString("UPLOAD_DIRECTORY"); udir == "" {
 					log.Println("Upload directory must be set for local storage!")
 					os.Exit(0)
 				} else if storage, err := storage.NewLocalStorage(udir); err != nil {
@@ -34,24 +34,14 @@ var (
 					serverOptions = append(serverOptions, server.UseStorage(storage))
 				}
 			case "s3":
-				bucket := viper.GetString("s3_bucket")
-				region := viper.GetString("s3_region")
-				accessKey := viper.GetString("aws_access_key")
-				secretKey := viper.GetString("aws_secret_key")
-				sessionToken := viper.GetString("aws_session_token")
-				endpointUrl := viper.GetString("aws_endpoint_url")
+				bucket := viper.GetString("S3_BUCKET")
+				region := viper.GetString("S3_REGION")
+				accessKey := viper.GetString("AWS_ACCESS_KEY")
+				secretKey := viper.GetString("AWS_SECRET_KEY")
+				sessionToken := viper.GetString("AWS_SESSION_TOKEN")
+				endpointUrl := viper.GetString("AWS_ENDPOINT_URL")
 
 				if storage, err := storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket); err != nil {
-					log.Println(err)
-					os.Exit(1)
-				} else {
-					serverOptions = append(serverOptions, server.UseStorage(storage))
-				}
-			case "storj":
-				bucket := viper.GetString("storj_bucket")
-				access := viper.GetString("storj_access")
-
-				if storage, err := storage.NewStorjStorage(access, bucket); err != nil {
 					log.Println(err)
 					os.Exit(1)
 				} else {

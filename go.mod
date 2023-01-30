@@ -12,6 +12,4 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0
-	storj.io/common v0.0.0-20220414110316-a5cb7172d6bf
-	storj.io/uplink v1.8.2
 )

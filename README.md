@@ -65,17 +65,6 @@ $ export AWS_SECRET_KEY=
 $ export AWS_ENDPOINT_URL=https://${accountid}.r2.cloudflarestorage.com
 ```
 
-### Storj
-
-```bash
-# Override storage provider
-$ export STORAGE=storj
-
-# Specify Storj bucket and its access key
-$ export STORJ_BUCKET=storage-bucket
-$ export STORJ_ACCESS=
-```
-
 ## Usage
 
 ### Program usage
