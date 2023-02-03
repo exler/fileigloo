@@ -9,7 +9,7 @@
 
 ## Requirements
 
-* Go >= 1.16
+* Go >= 1.20
 
 ## Configuration
 
@@ -118,6 +118,6 @@ $ curl -X DELETE <value from Delete-Url header>
 
 ## License
 
-Copyright (c) 2021-2022 by ***Kamil Marut***
+Copyright (c) 2021-2023 by ***Kamil Marut***
 
 `Fileigloo` is under the terms of the [MIT License](https://www.tldrlegal.com/l/mit), following all clarifications stated in the [license file](LICENSE).
