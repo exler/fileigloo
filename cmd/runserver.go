@@ -20,6 +20,7 @@ var (
 				server.Port(viper.GetInt("PORT")),
 				server.MaxUploadSize(viper.GetInt64("MAX_UPLOAD_SIZE")),
 				server.RateLimit(viper.GetInt("RATE_LIMIT")),
+				server.CreateLogger(server.NewLogger(viper.GetString("SENTRY_DSN") != "")),
 			}
 
 			switch storageProvider := viper.GetString("STORAGE"); storageProvider {
@@ -28,8 +29,7 @@ var (
 					log.Println("Upload directory must be set for local storage!")
 					os.Exit(0)
 				} else if storage, err := storage.NewLocalStorage(udir); err != nil {
-					log.Println(err)
-					os.Exit(1)
+					log.Fatalln(err)
 				} else {
 					serverOptions = append(serverOptions, server.UseStorage(storage))
 				}
@@ -60,7 +60,5 @@ var (
 
 func init() {
 	serverCmd.Flags().Int("port", 8000, "Port to run the server on")
-	serverCmd.Flags().Bool("https-only", false, "Automatically make all URLs with HTTPS schema")
-	viper.BindPFlag("port", serverCmd.Flags().Lookup("port"))             //#nosec
-	viper.BindPFlag("https-only", serverCmd.Flags().Lookup("https-only")) //#nosec
+	viper.BindPFlag("port", serverCmd.Flags().Lookup("port")) //#nosec
 }
