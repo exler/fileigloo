@@ -6,59 +6,114 @@ import (
 
 	"github.com/exler/fileigloo/server"
 	"github.com/exler/fileigloo/storage"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/getsentry/sentry-go"
+	"github.com/urfave/cli/v2"
 )
 
-var (
-	serverCmd = &cobra.Command{
-		Use:   "runserver",
-		Short: "Run web server",
-		Long:  "Run web server allowing to upload files and pastes via API or browser",
-		Run: func(cmd *cobra.Command, args []string) {
-			serverOptions := []server.OptionFn{
-				server.Port(viper.GetInt("PORT")),
-				server.MaxUploadSize(viper.GetInt64("MAX_UPLOAD_SIZE")),
-				server.RateLimit(viper.GetInt("RATE_LIMIT")),
-				server.CreateLogger(server.NewLogger(viper.GetString("SENTRY_DSN") != "")),
-			}
-
-			switch storageProvider := viper.GetString("STORAGE"); storageProvider {
-			case "local":
-				if udir := viper.GetString("UPLOAD_DIRECTORY"); udir == "" {
-					log.Println("Upload directory must be set for local storage!")
-					os.Exit(0)
-				} else if storage, err := storage.NewLocalStorage(udir); err != nil {
-					log.Fatalln(err)
-				} else {
-					serverOptions = append(serverOptions, server.UseStorage(storage))
-				}
-			case "s3":
-				bucket := viper.GetString("S3_BUCKET")
-				region := viper.GetString("S3_REGION")
-				accessKey := viper.GetString("AWS_ACCESS_KEY")
-				secretKey := viper.GetString("AWS_SECRET_KEY")
-				sessionToken := viper.GetString("AWS_SESSION_TOKEN")
-				endpointUrl := viper.GetString("AWS_ENDPOINT_URL")
-
-				if storage, err := storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket); err != nil {
-					log.Println(err)
-					os.Exit(1)
-				} else {
-					serverOptions = append(serverOptions, server.UseStorage(storage))
-				}
-			default:
-				log.Println("Incorrect or no storage type chosen!")
-				os.Exit(0)
-			}
-
-			srv := server.New(serverOptions...)
-			srv.Run()
+var serverCmd = &cli.Command{
+	Name:  "runserver",
+	Usage: "Run web server",
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:    "port",
+			Aliases: []string{"p"},
+			Usage:   "Port to listen on",
+			Value:   8000,
 		},
-	}
-)
+		&cli.Int64Flag{
+			Name:    "max-upload-size",
+			Value:   0,
+			EnvVars: []string{"MAX_UPLOAD_SIZE"},
+		},
+		&cli.IntFlag{
+			Name:    "rate-limit",
+			Value:   2,
+			EnvVars: []string{"RATE_LIMIT"},
+		},
+		&cli.StringFlag{
+			Name:    "storage",
+			Value:   "local",
+			EnvVars: []string{"STORAGE"},
+		},
+		&cli.StringFlag{
+			Name:    "upload-directory",
+			Value:   "uploads/",
+			EnvVars: []string{"UPLOAD_DIRECTORY"},
+		},
+		&cli.StringFlag{
+			Name:    "s3-bucket",
+			EnvVars: []string{"S3_BUCKET"},
+		},
+		&cli.StringFlag{
+			Name:    "s3-region",
+			EnvVars: []string{"S3_REGION"},
+		},
+		&cli.StringFlag{
+			Name:    "aws-access-key",
+			EnvVars: []string{"AWS_ACCESS_KEY"},
+		},
+		&cli.StringFlag{
+			Name:    "aws-secret-key",
+			EnvVars: []string{"AWS_SECRET_KEY"},
+		},
+		&cli.StringFlag{
+			Name:    "aws-session-token",
+			EnvVars: []string{"AWS_SESSION_TOKEN"},
+		},
+		&cli.StringFlag{
+			Name:    "aws-endpoint-url",
+			EnvVars: []string{"AWS_ENDPOINT_URL"},
+		},
+		&cli.StringFlag{
+			Name:    "sentry-dsn",
+			EnvVars: []string{"SENTRY_DSN"},
+			Action: func(cCtx *cli.Context, dsn string) error {
+				return sentry.Init(sentry.ClientOptions{
+					Dsn: dsn,
+				})
+			},
+		},
+	},
+	Action: func(cCtx *cli.Context) error {
+		serverOptions := []server.OptionFn{
+			server.Port(cCtx.Int("port")),
+			server.MaxUploadSize(cCtx.Int64("max-upload-size")),
+			server.RateLimit(cCtx.Int("rate-limit")),
+			server.CreateLogger(server.NewLogger(cCtx.IsSet("sentry-dsn"))),
+		}
 
-func init() {
-	serverCmd.Flags().Int("port", 8000, "Port to run the server on")
-	viper.BindPFlag("port", serverCmd.Flags().Lookup("port")) //#nosec
+		switch storageProvider := cCtx.String("storage"); storageProvider {
+		case "local":
+			if udir := cCtx.String("upload-directory"); udir == "" {
+				log.Println("Upload directory must be set for local storage!")
+				os.Exit(0)
+			} else if storage, err := storage.NewLocalStorage(udir); err != nil {
+				log.Fatalln(err)
+			} else {
+				serverOptions = append(serverOptions, server.UseStorage(storage))
+			}
+		case "s3":
+			bucket := cCtx.String("s3-bucket")
+			region := cCtx.String("s3-region")
+			accessKey := cCtx.String("aws-access-key")
+			secretKey := cCtx.String("aws-secret-key")
+			sessionToken := cCtx.String("aws-session-token")
+			endpointUrl := cCtx.String("aws-endpoint-url")
+
+			if storage, err := storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket); err != nil {
+				log.Println(err)
+				os.Exit(1)
+			} else {
+				serverOptions = append(serverOptions, server.UseStorage(storage))
+			}
+		default:
+			log.Println("Incorrect or no storage type chosen!")
+			os.Exit(0)
+		}
+
+		srv := server.New(serverOptions...)
+		srv.Run()
+
+		return nil
+	},
 }

@@ -10,6 +10,5 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/microcosm-cc/bluemonday v1.0.21
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/spf13/cobra v1.4.0
-	github.com/spf13/viper v1.11.0
+	github.com/urfave/cli/v2 v2.24.3
 )

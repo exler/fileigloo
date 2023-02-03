@@ -11,7 +11,7 @@ COPY . /app
 
 ENV GO111MODULE=on
 
-RUN CGO_ENABLED=0 go build -ldflags "-X github.com/exler/fileigloo/cmd.Version=$(git describe --tags)" -o /fileigloo
+RUN CGO_ENABLED=0 go build -tags urfave_cli_no_docs -ldflags "-X github.com/exler/fileigloo/cmd.Version=$(git describe --tags)" -o /fileigloo
 
 FROM alpine:3.17
 
