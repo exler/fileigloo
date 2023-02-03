@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/exler/fileigloo/logger"
 	"github.com/exler/fileigloo/server"
 	"github.com/exler/fileigloo/storage"
-	"github.com/getsentry/sentry-go"
 	"github.com/urfave/cli/v2"
 )
 
@@ -67,11 +67,6 @@ var serverCmd = &cli.Command{
 		&cli.StringFlag{
 			Name:    "sentry-dsn",
 			EnvVars: []string{"SENTRY_DSN"},
-			Action: func(cCtx *cli.Context, dsn string) error {
-				return sentry.Init(sentry.ClientOptions{
-					Dsn: dsn,
-				})
-			},
 		},
 	},
 	Action: func(cCtx *cli.Context) error {
@@ -79,7 +74,7 @@ var serverCmd = &cli.Command{
 			server.Port(cCtx.Int("port")),
 			server.MaxUploadSize(cCtx.Int64("max-upload-size")),
 			server.RateLimit(cCtx.Int("rate-limit")),
-			server.CreateLogger(server.NewLogger(cCtx.IsSet("sentry-dsn"))),
+			server.UseLogger(logger.NewLogger(cCtx.String("sentry-dsn"))),
 		}
 
 		switch storageProvider := cCtx.String("storage"); storageProvider {

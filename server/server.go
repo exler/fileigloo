@@ -8,10 +8,11 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/exler/fileigloo/logger"
 	"github.com/exler/fileigloo/storage"
 	"github.com/go-chi/chi/v5"
 
-	"github.com/didip/tollbooth"
+	"github.com/didip/tollbooth/v7"
 )
 
 type OptionFn func(*Server)
@@ -34,7 +35,7 @@ func UseStorage(storage storage.Storage) OptionFn {
 	}
 }
 
-func CreateLogger(logger *Logger) OptionFn {
+func UseLogger(logger *logger.Logger) OptionFn {
 	return func(s *Server) {
 		s.logger = logger
 	}
@@ -47,7 +48,7 @@ func Port(port int) OptionFn {
 }
 
 type Server struct {
-	logger *Logger
+	logger *logger.Logger
 
 	router chi.Router
 
