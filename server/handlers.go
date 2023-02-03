@@ -11,7 +11,7 @@ import (
 
 	"github.com/exler/fileigloo/random"
 	"github.com/exler/fileigloo/storage"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 	"github.com/microcosm-cc/bluemonday"
 )
 
@@ -79,22 +79,20 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	var fileUrl *url.URL
 	if ShowInline(contentType) {
-		fileUrl, _ = s.router.Get("view").URL("view", "view", "fileId", fileId)
+		fileUrl = BuildURL(r, "view", fileId)
 	} else {
-		fileUrl, _ = s.router.Get("download").URL("fileId", fileId)
+		fileUrl = BuildURL(r, fileId)
 	}
 
-	response := s.GetFullURL(r, fileUrl)
-	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", response))
+	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
-	deleteUrl, _ := s.router.Get("delete").URL("fileId", fileId, "deleteToken", metadata.DeleteToken)
-	w.Header().Add("Delete-URL", s.GetFullURL(r, deleteUrl))
-	SendPlain(w, response)
+	deleteUrl := BuildURL(r, fileId, metadata.DeleteToken)
+	w.Header().Add("Delete-URL", deleteUrl.String())
+	SendPlain(w, fileUrl.String())
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	fileId := SanitizeFilename(vars["fileId"])
+	fileId := SanitizeFilename(chi.URLParam(r, "fileId"))
 
 	reader, metadata, err := s.storage.GetWithMetadata(r.Context(), fileId)
 	if s.storage.FileNotExists(err) {
@@ -108,7 +106,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	defer reader.Close()
 
 	var fileDisposition string
-	if _, ok := vars["view"]; ok {
+	if chi.URLParam(r, "view") != "" {
 		fileDisposition = "inline"
 		if strings.HasPrefix(metadata.ContentType, "text/") {
 			reader = io.NopCloser(bluemonday.UGCPolicy().SanitizeReader(reader))
@@ -148,9 +146,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	fileId := SanitizeFilename(vars["fileId"])
-	deleteToken := vars["deleteToken"]
+	fileId := SanitizeFilename(chi.URLParam(r, "fileId"))
 
 	metadata, err := s.storage.GetOnlyMetadata(r.Context(), fileId)
 	if s.storage.FileNotExists(err) {
@@ -162,7 +158,7 @@ func (s *Server) deleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if deleteToken != metadata.DeleteToken {
+	if chi.URLParam(r, "deleteToken") != metadata.DeleteToken {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}

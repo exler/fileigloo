@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/exler/fileigloo/storage"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/didip/tollbooth"
-	"github.com/gorilla/mux"
 )
 
 type OptionFn func(*Server)
@@ -49,7 +49,7 @@ func Port(port int) OptionFn {
 type Server struct {
 	logger *Logger
 
-	router *mux.Router
+	router chi.Router
 
 	storage storage.Storage
 
@@ -71,13 +71,13 @@ func (s *Server) Run() {
 	fs := http.FileServer(http.Dir("./public"))
 	limiter := tollbooth.NewLimiter(float64(s.maxRequests), nil)
 
-	s.router = mux.NewRouter()
-	s.router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", fs))
-	s.router.HandleFunc("/", s.indexHandler).Methods("GET").Name("index")
-	s.router.HandleFunc("/", s.uploadHandler).Methods("POST").Name("upload")
-	s.router.HandleFunc("/{view:(?:view)}/{fileId}", s.downloadHandler).Methods("GET").Name("view")
-	s.router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET").Name("download")
-	s.router.HandleFunc("/{fileId}/{deleteToken}", s.deleteHandler).Methods("DELETE").Name("delete")
+	s.router = chi.NewRouter()
+	s.router.Handle("/public/*", http.StripPrefix("/public/", fs))
+	s.router.Get("/", s.indexHandler)
+	s.router.Post("/", s.uploadHandler)
+	s.router.Get("/{view:(?:view)}/{fileId}", s.downloadHandler)
+	s.router.Get("/{fileId}", s.downloadHandler)
+	s.router.Delete("/{fileId}/{deleteToken}", s.deleteHandler)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.port),
