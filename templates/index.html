@@ -8,7 +8,7 @@
     <title>Fileigloo</title>
 
     <link rel="icon" href="/public/favicon.png">
-    <link rel="stylesheet" href="https://unpkg.com/pcss-framework/dist/pcss.min.css">
+    <link rel="stylesheet" href="/public/pcss-1.1.2.min.css">
 
     <style>
         .hidden {
@@ -22,6 +22,10 @@
             color: #dbdbdb;
             cursor: pointer;
             margin-bottom: 8px;
+        }
+
+        #file-select-input {
+            display: none;
         }
 
         #file-select #file-select-filename {
@@ -43,12 +47,17 @@
 	        -o-transition: all 0.2s ease-in-out;
         }
 
-        #file-select-input {
-            display: none;
-        }
-
         #pastebin-input {
             font-family: monospace;
+        }
+
+        #upload-progress-bar[value] {
+            appearance: none;
+            background: #1a242f;
+            border: solid 1px #1a242f;
+            border-radius: 6px;
+            width: 80%;
+            height: 24px;
         }
     </style>
 </head>
@@ -61,115 +70,71 @@
             </a>
         </center>
 
-        <div id="alert" class="hidden">
+        <div id="result" class="hidden">
             <fieldset>
-                <legend>Message</legend>
-                <center></center>
+                <legend>Result</legend>
+                <progress id="upload-progress-bar" max="100" value="0"></progress>
+                <center id="result-text" class="hidden">Upload successful: <span id="result-url"></span></center>
             </fieldset>
         </div>
 
-        <section id="file-upload">
-            <fieldset>
-                <legend>File Upload</legend>
-                <div id="file-select">
-                    <div id="file-select-button">Choose File</div>
-                    <div id="file-select-filename">No file chosen...</div>
-                    <input id="file-select-input" type="file" name="file" />
-                </div>
-                <button id="file-upload-button" type="submit">Upload</button>
-            </fieldset>
-        </section>
+        <form id="form" hx-encoding="multipart/form-data" hx-post="/" hx-target="#result-url">
+            <section>
+                <fieldset>
+                    <legend>File Upload</legend>
+                    <div id="file-select">
+                        <div id="file-select-button">Choose File</div>
+                        <div id="file-select-filename">No file chosen...</div>
+                        <input id="file-select-input" type="file" name="file" />
+                    </div>
+                    <button id="file-upload-button" type="submit">Upload</button>
+                </fieldset>
+            </section>
 
-        <section id="pastebin">
-            <fieldset>
-                <legend>Pastebin</legend>
-                <textarea id="pastebin-input" autocomplete="off" rows="8"></textarea>
-                <button id="pastebin-button" type="submit">Create</button>
-            </fieldset>
-        </section>
+            <section id="pastebin">
+                <fieldset>
+                    <legend>Pastebin</legend>
+                    <textarea id="pastebin-input" autocomplete="off" rows="8" name="text"></textarea>
+                    <button id="pastebin-button" type="submit">Create</button>
+                </fieldset>
+            </section>
+        </form>
 
         <footer>
-            Copyright (c) <span id="copyright-year"></span> by Kamil Marut |
+            Copyright (c) {{ now.UTC.Year }} by Kamil Marut |
             <a href="https://github.com/exler/fileigloo" target="_blank" rel="noopener noreferrer">Github</a>
         </footer>
     </main>
+    <script src="/public/htmx-1.8.5.min.js"></script>
     <script>
-        function progressHandler(event) {
-            let percent = Math.round((event.loaded / event.total) * 100);
-            let message;
-            if (percent < 100) {
-                message = `Uploading ${percent}% complete...`;
-            } else {
-                message = "Upload complete! Download link will appear shortly..."
-            }
-            displayAlert(message);
-        }
-
-        function upload(content, type = "file") {
-            const url = "/";
-            const request = new XMLHttpRequest();
-            const fd = new FormData();
-
-            if (type === "file") {
-                // Omit progress indicator for pastebin as uploads are near instant
-                request.upload.addEventListener("progress", progressHandler, false);
-            }
-            request.open("POST", url, true);
-            request.onreadystatechange = function() {
-                if (request.readyState == 4 && request.status == 200) {
-                    let downloadUrl = request.responseText;
-                    let message = `Upload successful: <a href="${downloadUrl}">${downloadUrl}</a>`;
-                    displayAlert(message);
-                } else {
-                    displayAlert(request.responseText);
-                }
-            };
-
-            fd.append(type, content);
-            request.send(fd);
-        }
-
-        function displayAlert(content) {
-            let alert = document.getElementById("alert");
-            let alertText = alert.getElementsByTagName("center")[0];
-            alertText.innerHTML = content;
-            alert.style.display = "block";
-        }
-
         window.onload = function() {
-            let uploadButton = document.getElementById("file-upload-button");
-            let pastebinButton = document.getElementById("pastebin-button");
-            uploadButton.onclick = function() {
-                let uploadInput = document.getElementById("file-select-input");
-                let file = uploadInput.files[0];
-                upload(file, "file");
-            }
-            pastebinButton.onclick = function() {
-                let pastebinInput = document.getElementById("pastebin-input");
-                let text = pastebinInput.value;
-                upload(text, "text");
-            }
-
             let fileSelect = document.getElementById("file-select");
             let fileInput = document.getElementById("file-select-input");
             let selectFilename = document.getElementById("file-select-filename");
-            let page = document.querySelector("html")
-            fileSelect.onclick = function() { fileInput.click(); }
-            fileSelect.ondragover = function(event) { event.stopPropagation(); event.preventDefault(); }
-            fileSelect.ondrop = function(event) {
-                event.stopPropagation();
-                event.preventDefault();
-                let dt = event.dataTransfer; 
-                let file = dt.files[0];
-                selectFilename.innerText = file.name;
-                upload(file, "file")
-            }
+            fileSelect.onclick = function() { fileInput.click(); };
+            fileSelect.ondragover = function(event) { event.stopPropagation(); event.preventDefault(); };
+            fileSelect.ondrop = function(event) { 
+                event.stopPropagation(); 
+                event.preventDefault(); 
+                fileInput.files = event.dataTransfer.files; 
+                selectFilename.innerHTML = fileInput.files[0].name;
+            };
             fileInput.onchange = function() {
-                let filename = fileInput.files[0].name;
-                selectFilename.innerText = filename;
-            }
+                let file = fileInput.files[0];
+                selectFilename.innerHTML = file.name;
+            };
 
-            document.getElementById("copyright-year").innerHTML = new Date().getFullYear();
+            htmx.on("#form", "htmx:xhr:loadstart", function(evt) {
+                htmx.find("#result").classList.remove("hidden");
+                htmx.find("#upload-progress-bar").setAttribute("value", 0);
+            });
+            htmx.on("#form", "htmx:xhr:progress", function(evt) {
+                htmx.find("#upload-progress-bar").setAttribute("value", evt.detail.loaded/evt.detail.total * 100);
+            });
+            htmx.on("#form", "htmx:xhr:loadend", function(evt) {
+                htmx.find("#upload-progress-bar").classList.add("hidden");
+                htmx.find("#result-text").classList.remove("hidden");
+            });
         }
     </script>
 </body>
