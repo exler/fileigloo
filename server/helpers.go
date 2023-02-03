@@ -72,11 +72,21 @@ func GetUpload(r *http.Request) (file io.Reader, filename, contentType string, c
 }
 
 func BuildURL(r *http.Request, fragments ...string) *url.URL {
-	urlpath := r.URL.Host
+	var scheme string
+	if r.TLS != nil {
+		scheme = "https"
+	} else if header_scheme := r.Header.Get("X-Forwarded-Proto"); header_scheme != "" {
+		scheme = header_scheme
+	} else {
+		scheme = "http"
+	}
+
+	urlpath := r.Host
 	for _, fragment := range fragments {
 		urlpath = path.Join(urlpath, fragment)
 	}
 	return &url.URL{
-		Path: urlpath,
+		Path:   urlpath,
+		Scheme: scheme,
 	}
 }
