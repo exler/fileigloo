@@ -12,7 +12,6 @@ import (
 	"github.com/exler/fileigloo/random"
 	"github.com/exler/fileigloo/storage"
 	"github.com/go-chi/chi/v5"
-	"github.com/microcosm-cc/bluemonday"
 )
 
 // 128 Kilobits
@@ -109,7 +108,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	if chi.URLParam(r, "view") != "" {
 		fileDisposition = "inline"
 		if strings.HasPrefix(metadata.ContentType, "text/") {
-			reader = io.NopCloser(bluemonday.UGCPolicy().SanitizeReader(reader))
+			metadata.ContentType = "text/plain"
 		}
 	} else {
 		fileDisposition = "attachment"

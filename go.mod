@@ -9,6 +9,5 @@ require (
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/httprate v0.7.1
 	github.com/logrusorgru/aurora/v4 v4.0.0
-	github.com/microcosm-cc/bluemonday v1.0.21
 	github.com/urfave/cli/v2 v2.24.3
 )
