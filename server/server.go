@@ -11,8 +11,7 @@ import (
 	"github.com/exler/fileigloo/logger"
 	"github.com/exler/fileigloo/storage"
 	"github.com/go-chi/chi/v5"
-
-	"github.com/didip/tollbooth/v7"
+	"github.com/go-chi/httprate"
 )
 
 type OptionFn func(*Server)
@@ -70,9 +69,10 @@ func New(options ...OptionFn) *Server {
 
 func (s *Server) Run() {
 	fs := http.FileServer(http.Dir("./public"))
-	limiter := tollbooth.NewLimiter(float64(s.maxRequests), nil)
 
 	s.router = chi.NewRouter()
+	s.router.Use(httprate.LimitByIP(s.maxRequests, 1*time.Minute))
+
 	s.router.Handle("/public/*", http.StripPrefix("/public/", fs))
 	s.router.Get("/", s.indexHandler)
 	s.router.Post("/", s.uploadHandler)
@@ -85,7 +85,7 @@ func (s *Server) Run() {
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
-		Handler:      tollbooth.LimitHandler(limiter, s.router),
+		Handler:      s.router,
 	}
 	s.logger.Info(fmt.Sprintf("Server started [storage=%s]", s.storage.Type()))
 

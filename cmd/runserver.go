@@ -27,7 +27,7 @@ var serverCmd = &cli.Command{
 		},
 		&cli.IntFlag{
 			Name:    "rate-limit",
-			Value:   2,
+			Value:   20,
 			EnvVars: []string{"RATE_LIMIT"},
 		},
 		&cli.StringFlag{
