@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"io"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -39,6 +40,24 @@ func NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucke
 		session: session,
 		bucket:  bucket,
 	}, nil
+}
+
+func (s *S3Storage) List(ctx context.Context) (filenames []string, metadata []Metadata, err error) {
+	r := &s3.ListObjectsV2Input{
+		Bucket: aws.String(s.bucket),
+	}
+
+	response, err := s.s3.ListObjectsV2(r)
+	if err != nil {
+		return
+	}
+
+	contents := response.Contents
+	for _, obj := range contents {
+		filenames = append(filenames, *obj.Key)
+		metadata = append(metadata, Metadata{ContentLength: strconv.Itoa(int(*obj.Size)), Filename: "N/A"})
+	}
+	return
 }
 
 func (s *S3Storage) Get(ctx context.Context, filename string) (reader io.ReadCloser, err error) {

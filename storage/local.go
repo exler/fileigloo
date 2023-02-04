@@ -31,6 +31,30 @@ func (s *LocalStorage) Type() string {
 	return "local"
 }
 
+func (s *LocalStorage) List(ctx context.Context) (filenames []string, metadata []Metadata, err error) {
+	err = filepath.WalkDir(s.basedir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		if filepath.Ext(path) == ".metadata" {
+			return nil
+		}
+
+		filenames = append(filenames, d.Name())
+
+		m, err := s.GetOnlyMetadata(ctx, d.Name())
+		metadata = append(metadata, m)
+
+		return err
+	})
+	return
+}
+
 func (s *LocalStorage) Get(ctx context.Context, filename string) (reader io.ReadCloser, err error) {
 	path := filepath.Join(s.basedir, filename)
 	reader, err = os.Open(path) //#nosec

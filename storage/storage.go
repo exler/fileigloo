@@ -47,6 +47,7 @@ func StringMapToMetadata(m map[string]*string) Metadata {
 }
 
 type Storage interface {
+	List(ctx context.Context) (filenames []string, metadata []Metadata, err error)
 	Get(ctx context.Context, filename string) (reader io.ReadCloser, err error)
 	GetWithMetadata(ctx context.Context, filename string) (reader io.ReadCloser, metadata Metadata, err error)
 	GetOnlyMetadata(ctx context.Context, filename string) (metadata Metadata, err error)

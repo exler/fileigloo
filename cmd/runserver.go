@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"log"
-	"os"
 
 	"github.com/exler/fileigloo/logger"
 	"github.com/exler/fileigloo/server"
-	"github.com/exler/fileigloo/storage"
 	"github.com/urfave/cli/v2"
 )
 
@@ -77,34 +75,11 @@ var serverCmd = &cli.Command{
 			server.UseLogger(logger.NewLogger(cCtx.String("sentry-dsn"))),
 		}
 
-		switch storageProvider := cCtx.String("storage"); storageProvider {
-		case "local":
-			if udir := cCtx.String("upload-directory"); udir == "" {
-				log.Println("Upload directory must be set for local storage!")
-				os.Exit(0)
-			} else if storage, err := storage.NewLocalStorage(udir); err != nil {
-				log.Fatalln(err)
-			} else {
-				serverOptions = append(serverOptions, server.UseStorage(storage))
-			}
-		case "s3":
-			bucket := cCtx.String("s3-bucket")
-			region := cCtx.String("s3-region")
-			accessKey := cCtx.String("aws-access-key")
-			secretKey := cCtx.String("aws-secret-key")
-			sessionToken := cCtx.String("aws-session-token")
-			endpointUrl := cCtx.String("aws-endpoint-url")
-
-			if storage, err := storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket); err != nil {
-				log.Println(err)
-				os.Exit(1)
-			} else {
-				serverOptions = append(serverOptions, server.UseStorage(storage))
-			}
-		default:
-			log.Println("Incorrect or no storage type chosen!")
-			os.Exit(0)
+		storage, err := GetStorage(cCtx)
+		if err != nil {
+			log.Fatalln(err)
 		}
+		serverOptions = append(serverOptions, server.UseStorage(storage))
 
 		srv := server.New(serverOptions...)
 		srv.Run()
