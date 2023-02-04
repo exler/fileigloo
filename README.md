@@ -70,18 +70,17 @@ $ export AWS_ENDPOINT_URL=https://${accountid}.r2.cloudflarestorage.com
 ### Program usage
 
 ```bash
-Usage:
-  fileigloo [command]
+USAGE:
+   fileigloo [global options] command [command options] [arguments...]
 
-Available Commands:
-  help        Help about any command
-  runserver   Run web server
-  version     Show current version
+COMMANDS:
+   version    Show current version
+   runserver  Run web server
+   files      Manage files in storage
+   help, h    Shows a list of commands or help for one command
 
-Flags:
-  -h, --help   help for fileigloo
-
-Use "fileigloo [command] --help" for more information about a command.
+GLOBAL OPTIONS:
+   --help, -h  show help
 ```
 
 ## License

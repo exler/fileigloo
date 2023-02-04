@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"strconv"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -18,6 +19,8 @@ type S3Storage struct {
 	s3      *s3.S3
 	session *session.Session
 	bucket  string
+
+	retentionTime time.Duration
 }
 
 func newAWSSession(accessKey, secretKey, sessionToken, endpointUrl, region string) *session.Session {
@@ -32,13 +35,14 @@ func (s *S3Storage) Type() string {
 	return "s3"
 }
 
-func NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket string) (*S3Storage, error) {
+func NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket string, retentionTime time.Duration) (*S3Storage, error) {
 	session := newAWSSession(accessKey, secretKey, sessionToken, endpointUrl, region)
 
 	return &S3Storage{
-		s3:      s3.New(session),
-		session: session,
-		bucket:  bucket,
+		s3:            s3.New(session),
+		session:       session,
+		bucket:        bucket,
+		retentionTime: retentionTime,
 	}, nil
 }
 
@@ -114,6 +118,7 @@ func (s *S3Storage) Put(ctx context.Context, filename string, reader io.Reader, 
 		Key:      aws.String(filename),
 		Body:     reader,
 		Metadata: mMap,
+		Expires:  aws.Time(time.Now().Add(s.retentionTime)),
 	})
 
 	return err
@@ -127,6 +132,11 @@ func (s *S3Storage) Delete(ctx context.Context, filename string) error {
 	_, err := s.s3.DeleteObject(r)
 
 	return err
+}
+
+// Noop: S3 has expiration set on file creation
+func (s *S3Storage) Purge() error {
+	return nil
 }
 
 func (s *S3Storage) FileNotExists(err error) bool {

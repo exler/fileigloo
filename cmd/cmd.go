@@ -22,7 +22,7 @@ func GetStorage(cCtx *cli.Context) (chosenStorage storage.Storage, err error) {
 			return nil, errors.New("no upload directory specified")
 		}
 
-		chosenStorage, err = storage.NewLocalStorage(udir)
+		chosenStorage, err = storage.NewLocalStorage(udir, cCtx.Duration("retention-time"))
 	case "s3":
 		bucket := cCtx.String("s3-bucket")
 		region := cCtx.String("s3-region")
@@ -31,7 +31,7 @@ func GetStorage(cCtx *cli.Context) (chosenStorage storage.Storage, err error) {
 		sessionToken := cCtx.String("aws-session-token")
 		endpointUrl := cCtx.String("aws-endpoint-url")
 
-		chosenStorage, err = storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket)
+		chosenStorage, err = storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket, cCtx.Duration("retention-time"))
 	default:
 		return nil, errors.New("wrong storage provider")
 	}

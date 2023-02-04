@@ -22,7 +22,7 @@ func MaxUploadSize(kbytes int64) OptionFn {
 	}
 }
 
-func RateLimit(requests int) OptionFn {
+func MaxRequests(requests int) OptionFn {
 	return func(s *Server) {
 		s.maxRequests = requests
 	}
@@ -87,6 +87,11 @@ func (s *Server) Run() {
 		Handler:      s.router,
 	}
 	s.logger.Info(fmt.Sprintf("Server started [storage=%s]", s.storage.Type()))
+
+	err := s.storage.Purge()
+	if err != nil {
+		s.logger.Error(err)
+	}
 
 	go func() {
 		err := srv.ListenAndServe()
