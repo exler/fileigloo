@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"io"
+	"time"
 )
 
 type Metadata struct {
@@ -41,4 +42,5 @@ type Storage interface {
 	Purge() error
 	FileNotExists(err error) bool
 	Type() string
+	RetentionTime() time.Duration
 }

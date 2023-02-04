@@ -87,7 +87,8 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
 	renderTemplate(w, "index", map[string]interface{}{
-		"fileUrl": fileUrl,
+		"fileUrl":       fileUrl,
+		"retentionTime": s.storage.RetentionTime().String(),
 	})
 }
 

@@ -35,6 +35,10 @@ func (s *S3Storage) Type() string {
 	return "s3"
 }
 
+func (s *S3Storage) RetentionTime() time.Duration {
+	return s.retentionTime
+}
+
 func NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket string, retentionTime time.Duration) (*S3Storage, error) {
 	session := newAWSSession(accessKey, secretKey, sessionToken, endpointUrl, region)
 

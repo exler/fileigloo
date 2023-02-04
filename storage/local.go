@@ -35,6 +35,10 @@ func (s *LocalStorage) Type() string {
 	return "local"
 }
 
+func (s *LocalStorage) RetentionTime() time.Duration {
+	return s.retentionTime
+}
+
 func (s *LocalStorage) List(ctx context.Context) (filenames []string, metadata []Metadata, err error) {
 	err = filepath.WalkDir(s.basedir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
