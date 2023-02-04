@@ -13,7 +13,7 @@
 
 ## Configuration
 
-All configuration is done through environment variables.
+All configuration is done through environment variables or CLI flags.
 
 ### Local storage
 
@@ -25,7 +25,7 @@ $ export STORAGE=local
 $ export UPLOAD_DIRECTORY=uploads/
 ```
 
-### S3
+### Amazon S3
 
 ```bash
 # Override storage provider
@@ -82,38 +82,6 @@ Flags:
   -h, --help   help for fileigloo
 
 Use "fileigloo [command] --help" for more information about a command.
-```
-
-### cURL examples
-
-* Upload file
-
-```bash
-$ curl -F file=@example.txt http://localhost:8000
-http://localhost:8000/M7JeqHRk3uw0
-```
-
-* Upload paste
-
-```bash
-$ curl -F text="Example request" http://localhost:8000
-http://localhost:8000/view/6QZuThTz8U7d
-```
-
-* Download file
-
-```bash
-# Write to stdout
-$ curl http://localhost:8000/M7JeqHRk3uw0
-
-# Write to file
-$ curl -o output.txt http://localhost:8000/M7JeqHRk3uw0
-```
-
-* Delete file
-
-```
-$ curl -X DELETE <value from Delete-Url header>
 ```
 
 ## License

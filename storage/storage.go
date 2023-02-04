@@ -3,25 +3,12 @@ package storage
 import (
 	"context"
 	"io"
-	"strconv"
 )
 
 type Metadata struct {
 	Filename      string // Original filename
 	ContentType   string
 	ContentLength string
-	DeleteToken   string
-}
-
-func MakeMetadata(filename, contentType string, contentLength int64, deleteToken string) Metadata {
-	metadata := Metadata{
-		Filename:      filename,
-		ContentType:   contentType,
-		ContentLength: strconv.FormatInt(contentLength, 10),
-		DeleteToken:   deleteToken,
-	}
-
-	return metadata
 }
 
 func MetadataToStringMap(metadata Metadata) map[string]*string {
@@ -30,7 +17,6 @@ func MetadataToStringMap(metadata Metadata) map[string]*string {
 	m["Filename"] = &metadata.Filename
 	m["Content-Type"] = &metadata.ContentType
 	m["Content-Length"] = &metadata.ContentLength
-	m["Delete-Token"] = &metadata.DeleteToken
 
 	return m
 }
@@ -40,7 +26,6 @@ func StringMapToMetadata(m map[string]*string) Metadata {
 		Filename:      *m["Filename"],
 		ContentType:   *m["Content-Type"],
 		ContentLength: *m["Content-Length"],
-		DeleteToken:   *m["Delete-Token"],
 	}
 
 	return metadata

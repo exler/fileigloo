@@ -7,14 +7,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fileigloo</title>
 
+    <link rel="preload" href="/public/pcss-1.1.2.min.css" as="style">
+
     <link rel="icon" href="/public/favicon.png">
     <link rel="stylesheet" href="/public/pcss-1.1.2.min.css">
 
     <style>
         .hidden {
-            display: none;
+            display: none !important;
         }
-        
         #file-select {
             display: block;
             background: #161f27;
@@ -23,22 +24,18 @@
             cursor: pointer;
             margin-bottom: 8px;
         }
-
         #file-select-input {
             display: none;
         }
-
         #file-select #file-select-filename {
             display: inline-block;
             padding-left: 12px;
         }
-
         #file-select #file-select-button {
             display: inline-block;
             padding: 10px 14px;
             background: #1a242f;
         }
-
         #file-select:hover #file-select-button {
             background: #324759;
             transition: all 0.2s ease-in-out;
@@ -46,18 +43,37 @@
 	        -webkit-transition: all 0.2s ease-in-out;
 	        -o-transition: all 0.2s ease-in-out;
         }
-
         #pastebin-input {
             font-family: monospace;
         }
+        @keyframes spinner-inner {
+            0% { transform: translate(-50%,-50%) rotate(0deg); }
+            100% { transform: translate(-50%,-50%) rotate(360deg); }
+        }
+        .spinner-outer {
+            width: 32px;
+            height: 26px;
+            display: inline-block;
+            overflow: hidden;
+        }
+        .spinner-inner {
+            transform: translateZ(0) scale(0.3);
+            backface-visibility: hidden;
+            transform-origin: 0 0;
+        }
+        .spinner-inner div {
+            box-sizing: content-box; 
 
-        #upload-progress-bar[value] {
-            appearance: none;
-            background: #1a242f;
-            border: solid 1px #1a242f;
-            border-radius: 6px;
-            width: 80%;
-            height: 24px;
+            position: absolute;
+            width: 62px;
+            height: 62px;
+            border: 8px solid #4ea7ff;
+            border-top-color: transparent;
+            border-radius: 50%;
+
+            animation: spinner-inner 3s linear infinite;
+            top: 44px;
+            left: 44px;
         }
     </style>
 </head>
@@ -70,15 +86,18 @@
             </a>
         </center>
 
-        <div id="result" class="hidden">
+        {{ if .fileUrl }}
+        <div id="result">
             <fieldset>
                 <legend>Result</legend>
-                <progress id="upload-progress-bar" max="100" value="0"></progress>
-                <center id="result-text" class="hidden">Upload successful: <span id="result-url"></span></center>
+                <center>
+                    File uploaded: <a href="{{ .fileUrl }}">{{ .fileUrl }}</a>
+                </center>
             </fieldset>
         </div>
+        {{ end }}
 
-        <form id="form" hx-encoding="multipart/form-data" hx-post="/" hx-target="#result-url">
+        <form id="form" method="POST" action="/" enctype="multipart/form-data">
             <section>
                 <fieldset>
                     <legend>File Upload</legend>
@@ -88,13 +107,14 @@
                         <input id="file-select-input" type="file" name="file" />
                     </div>
                     <button id="file-upload-button" type="submit">Upload</button>
+                    <div id="spinner" class="spinner-outer hidden"><div class="spinner-inner"><div></div></div></div>
                 </fieldset>
             </section>
 
             <section id="pastebin">
                 <fieldset>
                     <legend>Pastebin</legend>
-                    <textarea id="pastebin-input" autocomplete="off" rows="8" name="text"></textarea>
+                    <textarea id="pastebin-input" autocomplete="off" rows="24" name="text"></textarea>
                     <button id="pastebin-button" type="submit">Create</button>
                 </fieldset>
             </section>
@@ -105,11 +125,11 @@
             <a href="https://github.com/exler/fileigloo" target="_blank" rel="noopener noreferrer">Github</a>
         </footer>
     </main>
-    <script src="/public/htmx-1.8.5.min.js"></script>
     <script>
         window.onload = function() {
             let fileSelect = document.getElementById("file-select");
             let fileInput = document.getElementById("file-select-input");
+            let fileUploadButton = document.getElementById("file-upload-button");
             let selectFilename = document.getElementById("file-select-filename");
             fileSelect.onclick = function() { fileInput.click(); };
             fileSelect.ondragover = function(event) { event.stopPropagation(); event.preventDefault(); };
@@ -123,18 +143,11 @@
                 let file = fileInput.files[0];
                 selectFilename.innerHTML = file.name;
             };
-
-            htmx.on("#form", "htmx:xhr:loadstart", function(evt) {
-                htmx.find("#result").classList.remove("hidden");
-                htmx.find("#upload-progress-bar").setAttribute("value", 0);
-            });
-            htmx.on("#form", "htmx:xhr:progress", function(evt) {
-                htmx.find("#upload-progress-bar").setAttribute("value", evt.detail.loaded/evt.detail.total * 100);
-            });
-            htmx.on("#form", "htmx:xhr:loadend", function(evt) {
-                htmx.find("#upload-progress-bar").classList.add("hidden");
-                htmx.find("#result-text").classList.remove("hidden");
-            });
+            fileUploadButton.onclick = function() {
+                if (fileInput.files.length != 0) {
+                    document.getElementById("spinner").classList.remove("hidden");
+                }
+            };
         }
     </script>
 </body>

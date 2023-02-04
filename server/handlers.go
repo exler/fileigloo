@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,12 +25,8 @@ func generateFileId() string {
 	return random.String(12)
 }
 
-func generateToken() string {
-	return random.String(6)
-}
-
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index")
+	renderTemplate(w, "index", nil)
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +66,11 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	metadata := storage.MakeMetadata(filename, contentType, contentLength, generateToken())
+	metadata := storage.Metadata{
+		Filename:      filename,
+		ContentType:   contentType,
+		ContentLength: strconv.FormatInt(contentLength, 10),
+	}
 	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
 		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -85,9 +86,9 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
-	deleteUrl := BuildURL(r, fileId, metadata.DeleteToken)
-	w.Header().Add("Delete-URL", deleteUrl.String())
-	SendPlain(w, fileUrl.String())
+	renderTemplate(w, "index", map[string]interface{}{
+		"fileUrl": fileUrl,
+	})
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
@@ -142,30 +143,4 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeContent(w, r, metadata.Filename, time.Now(), file)
-}
-
-func (s *Server) deleteHandler(w http.ResponseWriter, r *http.Request) {
-	fileId := SanitizeFilename(chi.URLParam(r, "fileId"))
-
-	metadata, err := s.storage.GetOnlyMetadata(r.Context(), fileId)
-	if s.storage.FileNotExists(err) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	} else if err != nil {
-		s.logger.Error(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	if chi.URLParam(r, "deleteToken") != metadata.DeleteToken {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return
-	}
-
-	if err := s.storage.Delete(r.Context(), fileId); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	SendPlain(w, "File deleted")
 }

@@ -78,7 +78,6 @@ func (s *Server) Run() {
 	s.router.Post("/", s.uploadHandler)
 	s.router.Get("/{view:(?:view)}/{fileId}", s.downloadHandler)
 	s.router.Get("/{fileId}", s.downloadHandler)
-	s.router.Delete("/{fileId}/{deleteToken}", s.deleteHandler)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.port),
