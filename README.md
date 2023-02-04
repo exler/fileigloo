@@ -2,18 +2,18 @@
     <img src="public/logo.svg" width="128">
     <p align="center">❄️ Small and simple online file sharing & pastebin</p>
     <p align="center">
-      <img alt="GitHub Test Workflow Status" src="https://img.shields.io/github/workflow/status/exler/fileigloo/Test">
+      <img alt="GitHub Test Workflow Status" src="https://img.shields.io/github/actions/workflow/status/exler/fileigloo/test.yml?branch=main">
       <img alt="MIT License" src="https://img.shields.io/github/license/exler/fileigloo?color=lightblue">
     </p>
 </p>
 
 ## Requirements
 
-* Go >= 1.16
+* Go >= 1.20
 
 ## Configuration
 
-All configuration is done through environment variables.
+All configuration is done through environment variables or CLI flags.
 
 ### Local storage
 
@@ -25,7 +25,7 @@ $ export STORAGE=local
 $ export UPLOAD_DIRECTORY=uploads/
 ```
 
-### S3
+### Amazon S3
 
 ```bash
 # Override storage provider
@@ -65,70 +65,26 @@ $ export AWS_SECRET_KEY=
 $ export AWS_ENDPOINT_URL=https://${accountid}.r2.cloudflarestorage.com
 ```
 
-### Storj
-
-```bash
-# Override storage provider
-$ export STORAGE=storj
-
-# Specify Storj bucket and its access key
-$ export STORJ_BUCKET=storage-bucket
-$ export STORJ_ACCESS=
-```
-
 ## Usage
 
 ### Program usage
 
 ```bash
-Usage:
-  fileigloo [command]
+USAGE:
+   fileigloo [global options] command [command options] [arguments...]
 
-Available Commands:
-  help        Help about any command
-  runserver   Run web server
-  version     Show current version
+COMMANDS:
+   version    Show current version
+   runserver  Run web server
+   files      Manage files in storage
+   help, h    Shows a list of commands or help for one command
 
-Flags:
-  -h, --help   help for fileigloo
-
-Use "fileigloo [command] --help" for more information about a command.
-```
-
-### cURL examples
-
-* Upload file
-
-```bash
-$ curl -F file=@example.txt http://localhost:8000
-http://localhost:8000/M7JeqHRk3uw0
-```
-
-* Upload paste
-
-```bash
-$ curl -F text="Example request" http://localhost:8000
-http://localhost:8000/view/6QZuThTz8U7d
-```
-
-* Download file
-
-```bash
-# Write to stdout
-$ curl http://localhost:8000/M7JeqHRk3uw0
-
-# Write to file
-$ curl -o output.txt http://localhost:8000/M7JeqHRk3uw0
-```
-
-* Delete file
-
-```
-$ curl -X DELETE <value from Delete-Url header>
+GLOBAL OPTIONS:
+   --help, -h  show help
 ```
 
 ## License
 
-Copyright (c) 2021-2022 by ***Kamil Marut***
+Copyright (c) 2021-2023 by ***Kamil Marut***
 
 `Fileigloo` is under the terms of the [MIT License](https://www.tldrlegal.com/l/mit), following all clarifications stated in the [license file](LICENSE).

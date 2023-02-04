@@ -3,18 +3,18 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
+	"github.com/urfave/cli/v2"
 )
 
 var (
 	Version = "development"
 
-	versionCmd = &cobra.Command{
-		Use:   "version",
-		Short: "Show current version",
-		Long:  "Show current program version",
-		Run: func(cmd *cobra.Command, args []string) {
+	versionCmd = &cli.Command{
+		Name:  "version",
+		Usage: "Show current version",
+		Action: func(cCtx *cli.Context) error {
 			fmt.Printf("fileigloo %s\n", Version)
+			return nil
 		},
 	}
 )

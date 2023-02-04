@@ -3,18 +3,16 @@ package server
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/exler/fileigloo/random"
 	"github.com/exler/fileigloo/storage"
-	"github.com/gorilla/mux"
-	"github.com/microcosm-cc/bluemonday"
-	"github.com/rollbar/rollbar-go"
+	"github.com/go-chi/chi/v5"
 )
 
 // 128 Kilobits
@@ -27,12 +25,8 @@ func generateFileId() string {
 	return random.String(12)
 }
 
-func generateToken() string {
-	return random.String(6)
-}
-
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index")
+	renderTemplate(w, "index", nil)
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -42,8 +36,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseMultipartForm(_128K); err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -53,8 +46,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err == http.ErrMissingFile {
 			http.Error(w, "Request is missing `file` or `text` parameters", http.StatusBadRequest)
 		} else {
-			rollbar.Error(err)
-			log.Println(err.Error())
+			s.logger.Error(err)
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		}
 
@@ -74,50 +66,50 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	metadata := storage.MakeMetadata(filename, contentType, contentLength, generateToken())
+	metadata := storage.Metadata{
+		Filename:      filename,
+		ContentType:   contentType,
+		ContentLength: strconv.FormatInt(contentLength, 10),
+	}
 	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	var fileUrl *url.URL
 	if ShowInline(contentType) {
-		fileUrl, _ = s.router.Get("view").URL("view", "view", "fileId", fileId)
+		fileUrl = BuildURL(r, "view", fileId)
 	} else {
-		fileUrl, _ = s.router.Get("download").URL("fileId", fileId)
+		fileUrl = BuildURL(r, fileId)
 	}
 
-	response := s.GetFullURL(r, fileUrl)
-	log.Printf("New file uploaded [url=%s]\n", response)
+	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
-	deleteUrl, _ := s.router.Get("delete").URL("fileId", fileId, "deleteToken", metadata.DeleteToken)
-	w.Header().Add("Delete-URL", s.GetFullURL(r, deleteUrl))
-	SendPlain(w, response)
+	renderTemplate(w, "index", map[string]interface{}{
+		"fileUrl": fileUrl,
+	})
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	fileId := SanitizeFilename(vars["fileId"])
+	fileId := SanitizeFilename(chi.URLParam(r, "fileId"))
 
 	reader, metadata, err := s.storage.GetWithMetadata(r.Context(), fileId)
 	if s.storage.FileNotExists(err) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	} else if err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	defer reader.Close()
 
 	var fileDisposition string
-	if _, ok := vars["view"]; ok {
+	if chi.URLParam(r, "view") != "" {
 		fileDisposition = "inline"
 		if strings.HasPrefix(metadata.ContentType, "text/") {
-			reader = ioutil.NopCloser(bluemonday.UGCPolicy().SanitizeReader(reader))
+			metadata.ContentType = "text/plain"
 		}
 	} else {
 		fileDisposition = "attachment"
@@ -128,10 +120,9 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("%s; filename=%s", fileDisposition, metadata.Filename))
 
 	// Obtain FileSeeker
-	file, err := ioutil.TempFile("", "fileigloo-get-")
+	file, err := os.CreateTemp("", "fileigloo-get-")
 	if err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
+		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -145,41 +136,11 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err != nil {
-			rollbar.Error(err)
-			log.Println(err.Error())
+			s.logger.Error(err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 	}
 
 	http.ServeContent(w, r, metadata.Filename, time.Now(), file)
-}
-
-func (s *Server) deleteHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	fileId := SanitizeFilename(vars["fileId"])
-	deleteToken := vars["deleteToken"]
-
-	metadata, err := s.storage.GetOnlyMetadata(r.Context(), fileId)
-	if s.storage.FileNotExists(err) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	} else if err != nil {
-		rollbar.Error(err)
-		log.Println(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	if deleteToken != metadata.DeleteToken {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return
-	}
-
-	if err := s.storage.Delete(r.Context(), fileId); err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	SendPlain(w, "File deleted")
 }

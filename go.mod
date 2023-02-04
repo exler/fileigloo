@@ -1,18 +1,22 @@
 module github.com/exler/fileigloo
 
-go 1.16
+go 1.20
 
 require (
 	github.com/aws/aws-sdk-go v1.43.41
-	github.com/didip/tollbooth v4.0.2+incompatible
-	github.com/gorilla/mux v1.8.0
-	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/microcosm-cc/bluemonday v1.0.18
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/rollbar/rollbar-go v1.4.2
-	github.com/spf13/cobra v1.4.0
-	github.com/spf13/viper v1.11.0
-	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
-	storj.io/common v0.0.0-20220414110316-a5cb7172d6bf
-	storj.io/uplink v1.8.2
+	github.com/getsentry/sentry-go v0.17.0
+	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-chi/httprate v0.7.1
+	github.com/logrusorgru/aurora/v4 v4.0.0
+	github.com/urfave/cli/v2 v2.24.3
+)
+
+require (
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
+	golang.org/x/text v0.3.7 // indirect
 )

@@ -1,36 +1,44 @@
 package cmd
 
 import (
-	"log"
+	"errors"
+	"os"
 
-	colors "github.com/logrusorgru/aurora"
-	"github.com/rollbar/rollbar-go"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/exler/fileigloo/storage"
+	"github.com/urfave/cli/v2"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "fileigloo",
-	Short: "Small and simple online file sharing & pastebin",
-	Long: `Small and simple online file sharing & pastebin. 
-Source code available at github.com/exler/fileigloo`,
+var Cmd = &cli.App{
+	Name:     "fileigloo",
+	Usage:    "Small and simple online file sharing & pastebin",
+	Commands: []*cli.Command{versionCmd, serverCmd, filesCmd},
 }
 
-func init() {
-	log.SetPrefix(colors.Blue("[fileigloo] ").String())
+func GetStorage(cCtx *cli.Context) (chosenStorage storage.Storage, err error) {
+	switch storageProvider := cCtx.String("storage"); storageProvider {
+	case "local":
+		udir := cCtx.String("upload-directory")
+		if udir == "" {
+			return nil, errors.New("no upload directory specified")
+		}
 
-	viper.AutomaticEnv()
-	viper.SetDefault("storage", "local")
-	viper.SetDefault("upload_directory", "uploads/")
-	viper.SetDefault("rate_limit", 2)
+		chosenStorage, err = storage.NewLocalStorage(udir, cCtx.Duration("retention-time"))
+	case "s3":
+		bucket := cCtx.String("s3-bucket")
+		region := cCtx.String("s3-region")
+		accessKey := cCtx.String("aws-access-key")
+		secretKey := cCtx.String("aws-secret-key")
+		sessionToken := cCtx.String("aws-session-token")
+		endpointUrl := cCtx.String("aws-endpoint-url")
 
-	// Setup Rollbar logging
-	rollbar.SetToken(viper.GetString("ROLLBAR_TOKEN"))
-	rollbar.SetEnvironment(viper.GetString("ROLLBAR_ENVIRONMENT"))
+		chosenStorage, err = storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket, cCtx.Duration("retention-time"))
+	default:
+		return nil, errors.New("wrong storage provider")
+	}
 
-	Cmd.AddCommand(versionCmd, serverCmd)
+	return
 }
 
-func Execute() error {
-	return Cmd.Execute()
+func Run() error {
+	return Cmd.Run(os.Args)
 }

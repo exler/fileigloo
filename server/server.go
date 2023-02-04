@@ -3,16 +3,15 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/exler/fileigloo/logger"
 	"github.com/exler/fileigloo/storage"
-
-	"github.com/didip/tollbooth"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/httprate"
 )
 
 type OptionFn func(*Server)
@@ -23,7 +22,7 @@ func MaxUploadSize(kbytes int64) OptionFn {
 	}
 }
 
-func RateLimit(requests int) OptionFn {
+func MaxRequests(requests int) OptionFn {
 	return func(s *Server) {
 		s.maxRequests = requests
 	}
@@ -35,6 +34,12 @@ func UseStorage(storage storage.Storage) OptionFn {
 	}
 }
 
+func UseLogger(logger *logger.Logger) OptionFn {
+	return func(s *Server) {
+		s.logger = logger
+	}
+}
+
 func Port(port int) OptionFn {
 	return func(s *Server) {
 		s.port = port
@@ -42,7 +47,9 @@ func Port(port int) OptionFn {
 }
 
 type Server struct {
-	router *mux.Router
+	logger *logger.Logger
+
+	router chi.Router
 
 	storage storage.Storage
 
@@ -62,29 +69,34 @@ func New(options ...OptionFn) *Server {
 
 func (s *Server) Run() {
 	fs := http.FileServer(http.Dir("./public"))
-	limiter := tollbooth.NewLimiter(float64(s.maxRequests), nil)
 
-	s.router = mux.NewRouter()
-	s.router.PathPrefix("/public/").Handler(http.StripPrefix("/public/", fs))
-	s.router.HandleFunc("/", s.indexHandler).Methods("GET").Name("index")
-	s.router.HandleFunc("/", s.uploadHandler).Methods("POST").Name("upload")
-	s.router.HandleFunc("/{view:(?:view)}/{fileId}", s.downloadHandler).Methods("GET").Name("view")
-	s.router.HandleFunc("/{fileId}", s.downloadHandler).Methods("GET").Name("download")
-	s.router.HandleFunc("/{fileId}/{deleteToken}", s.deleteHandler).Methods("DELETE").Name("delete")
+	s.router = chi.NewRouter()
+	s.router.Use(httprate.LimitByIP(s.maxRequests, 1*time.Minute))
+
+	s.router.Handle("/public/*", http.StripPrefix("/public/", fs))
+	s.router.Get("/", s.indexHandler)
+	s.router.Post("/", s.uploadHandler)
+	s.router.Get("/{view:(?:view)}/{fileId}", s.downloadHandler)
+	s.router.Get("/{fileId}", s.downloadHandler)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.port),
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,
 		IdleTimeout:  time.Second * 60,
-		Handler:      tollbooth.LimitHandler(limiter, s.router),
+		Handler:      s.router,
 	}
-	log.Printf("Server started [storage=%s]", s.storage.Type())
+	s.logger.Info(fmt.Sprintf("Server started [storage=%s]", s.storage.Type()))
+
+	err := s.storage.Purge()
+	if err != nil {
+		s.logger.Error(err)
+	}
 
 	go func() {
 		err := srv.ListenAndServe()
 		if err != nil {
-			log.Println(err.Error())
+			s.logger.Error(err)
 			return
 		}
 	}()

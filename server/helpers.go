@@ -52,19 +52,6 @@ func ShowInline(contentType string) bool {
 	}
 }
 
-func (s *Server) GetFullURL(r *http.Request, fileUrl *url.URL) string {
-	fileUrl.Host = r.Host
-	if r.TLS != nil {
-		fileUrl.Scheme = "https"
-	} else if scheme := r.Header.Get("X-Forwarded-Proto"); scheme != "" {
-		fileUrl.Scheme = scheme
-	} else {
-		fileUrl.Scheme = "http"
-	}
-
-	return fileUrl.String()
-}
-
 func GetUpload(r *http.Request) (file io.Reader, filename, contentType string, contentLength int64, err error) {
 	var fheader *multipart.FileHeader
 	if file, fheader, err = r.FormFile("file"); err == nil {
@@ -82,4 +69,24 @@ func GetUpload(r *http.Request) (file io.Reader, filename, contentType string, c
 	}
 
 	return
+}
+
+func BuildURL(r *http.Request, fragments ...string) *url.URL {
+	var scheme string
+	if r.TLS != nil {
+		scheme = "https"
+	} else if header_scheme := r.Header.Get("X-Forwarded-Proto"); header_scheme != "" {
+		scheme = header_scheme
+	} else {
+		scheme = "http"
+	}
+
+	urlpath := r.Host
+	for _, fragment := range fragments {
+		urlpath = path.Join(urlpath, fragment)
+	}
+	return &url.URL{
+		Path:   urlpath,
+		Scheme: scheme,
+	}
 }
