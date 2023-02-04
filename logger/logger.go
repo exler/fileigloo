@@ -14,12 +14,15 @@ type Logger struct {
 	sentryHub *sentry.Hub
 }
 
-func NewLogger(sentry_dsn string) *Logger {
+func NewLogger(sentry_dsn, sentry_environment string) *Logger {
 	var sentryHub *sentry.Hub
 	if sentry_dsn != "" {
 		var sentryClient *sentry.Client
 		var err error
-		if sentryClient, err = sentry.NewClient(sentry.ClientOptions{Dsn: sentry_dsn}); err != nil {
+		if sentryClient, err = sentry.NewClient(sentry.ClientOptions{
+			Dsn:         sentry_dsn,
+			Environment: sentry_environment,
+		}); err != nil {
 			log.Fatal(err)
 		}
 		sentryHub = sentry.NewHub(sentryClient, sentry.NewScope())

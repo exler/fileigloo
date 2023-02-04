@@ -72,13 +72,17 @@ var serverCmd = &cli.Command{
 			Name:    "sentry-dsn",
 			EnvVars: []string{"SENTRY_DSN"},
 		},
+		&cli.StringFlag{
+			Name:    "sentry-environment",
+			EnvVars: []string{"SENTRY_ENVIRONMENT"},
+		},
 	},
 	Action: func(cCtx *cli.Context) error {
 		serverOptions := []server.OptionFn{
 			server.Port(cCtx.Int("port")),
 			server.MaxUploadSize(cCtx.Int64("max-upload-size")),
 			server.MaxRequests(cCtx.Int("rate-limit")),
-			server.UseLogger(logger.NewLogger(cCtx.String("sentry-dsn"))),
+			server.UseLogger(logger.NewLogger(cCtx.String("sentry-dsn"), cCtx.String("sentry-environment"))),
 		}
 
 		storage, err := GetStorage(cCtx)
