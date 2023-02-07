@@ -18,9 +18,6 @@ import (
 // 128 Kilobits
 const _128K = (1 << 3) * 128
 
-// 4 Megabytes
-const _4M = (1 << 20) * 4
-
 func generateFileId() string {
 	return random.String(12)
 }
@@ -129,18 +126,11 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer CleanTempFile(file)
 
-	tmpReader := io.TeeReader(reader, file)
-	for {
-		b := make([]byte, _4M)
-		if _, err := tmpReader.Read(b); err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			s.logger.Error(err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+	_, err = io.Copy(file, reader)
+	if err != nil {
+		s.logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
 	http.ServeContent(w, r, metadata.Filename, time.Now(), file)
