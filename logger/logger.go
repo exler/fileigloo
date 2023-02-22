@@ -29,7 +29,7 @@ func NewLogger(sentry_dsn, sentry_environment string) *Logger {
 	}
 
 	return &Logger{
-		Logger:    log.New(os.Stderr, colors.Blue("[fileigloo] ").String(), log.LstdFlags),
+		Logger:    log.New(os.Stderr, "[fileigloo] ", log.LstdFlags),
 		sentryHub: sentryHub,
 	}
 }
@@ -46,4 +46,8 @@ func (l *Logger) Info(msg string) {
 	if l.sentryHub != nil {
 		l.sentryHub.CaptureMessage(msg)
 	}
+}
+
+func (l *Logger) Debug(msg string) {
+	l.Logger.Print(colors.Gray(10, msg).String())
 }

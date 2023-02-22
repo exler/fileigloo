@@ -1,8 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,15 +17,14 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// 128 Kilobits
-const _128K = (1 << 3) * 128
-
 func generateFileId() string {
 	return random.String(12)
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index", nil)
+	renderTemplate(w, "index", map[string]interface{}{
+		"retentionTime": s.storage.RetentionTime().String(),
+	})
 }
 
 func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,23 +33,18 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseMultipartForm(_128K); err != nil {
+	var file multipart.File
+	var fileHeader *multipart.FileHeader
+	var err error
+	if file, fileHeader, err = r.FormFile("file"); err != nil {
 		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	file, filename, contentType, contentLength, err := GetUpload(r)
-	if err != nil {
-		if err == http.ErrMissingFile {
-			http.Error(w, "Request is missing `file` or `text` parameters", http.StatusBadRequest)
-		} else {
-			s.logger.Error(err)
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		}
-
-		return
-	}
+	fileName := SanitizeFilename(fileHeader.Filename)
+	contentType := fileHeader.Header.Get("Content-Type")
+	contentLength := fileHeader.Size
 
 	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
 		http.Error(w, fmt.Sprintf("File is too big! Max upload size: %dMB", s.maxUploadSize/(1024*1000)), http.StatusRequestEntityTooLarge)
@@ -64,11 +60,11 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metadata := storage.Metadata{
-		Filename:      filename,
+		Filename:      fileName,
 		ContentType:   contentType,
 		ContentLength: strconv.FormatInt(contentLength, 10),
 	}
-	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
+	if err = s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
 		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -80,6 +76,54 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fileUrl = BuildURL(r, fileId)
 	}
+
+	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
+
+	renderTemplate(w, "index", map[string]interface{}{
+		"fileUrl":       fileUrl,
+		"retentionTime": s.storage.RetentionTime().String(),
+	})
+}
+
+func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
+	var paste string
+	if paste = r.FormValue("paste"); paste == "" {
+		http.Error(w, "Paste is empty", http.StatusBadRequest)
+		return
+	}
+
+	buf := []byte(paste)
+
+	file := bytes.NewReader(buf)
+	fileName := "Paste"
+	contentType := "text/plain"
+	contentLength := int64(len(buf))
+
+	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
+		http.Error(w, fmt.Sprintf("File is too big! Max upload size: %dMB", s.maxUploadSize/(1024*1000)), http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	var fileId string
+	for {
+		fileId = generateFileId()
+		if _, err := s.storage.Get(r.Context(), fileId); s.storage.FileNotExists(err) {
+			break
+		}
+	}
+
+	metadata := storage.Metadata{
+		Filename:      fileName,
+		ContentType:   contentType,
+		ContentLength: strconv.FormatInt(contentLength, 10),
+	}
+	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
+		s.logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	fileUrl := BuildURL(r, "view", fileId)
 
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 

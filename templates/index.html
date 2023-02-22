@@ -2,17 +2,23 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fileigloo</title>
 
-    <link rel="preload" href="/public/pcss-1.1.2.min.css" as="style">
+    <link rel="preconnect" href="https://fonts.bunny.net" />
+    <link rel="stylesheet" href="https://fonts.bunny.net/css?family=cantarell:400" />
 
-    <link rel="icon" href="/public/favicon.png">
-    <link rel="stylesheet" href="/public/pcss-1.1.2.min.css">
+    <link rel="preload" href="/public/pcss-1.1.2.min.css" as="style" />
+
+    <link rel="icon" href="/public/favicon.png" />
+    <link rel="stylesheet" href="/public/pcss-1.1.2.min.css" />
 
     <style>
+        body {
+            font-family: 'Cantarell', sans-serif;
+        }
         .hidden {
             display: none !important;
         }
@@ -46,14 +52,17 @@
         #pastebin-input {
             font-family: monospace;
         }
+        #upload-button-container {
+            display: flex;
+            align-items: center;
+        }
         @keyframes spinner-inner {
             0% { transform: translate(-50%,-50%) rotate(0deg); }
             100% { transform: translate(-50%,-50%) rotate(360deg); }
         }
         .spinner-outer {
             width: 32px;
-            height: 26px;
-            display: inline-block;
+            height: 32px;
             overflow: hidden;
         }
         .spinner-inner {
@@ -92,15 +101,13 @@
                 <legend>Result</legend>
                 <center>
                     File uploaded: <a href="{{ .fileUrl }}">{{ .fileUrl }}</a>
-                    </br></br>
-                    Your file will be deleted in {{ .retentionTime }}.
                 </center>
             </fieldset>
         </div>
         {{ end }}
 
-        <form id="form" method="POST" action="/" enctype="multipart/form-data">
-            <section>
+        <form id="form-upload" method="POST" action="/upload" enctype="multipart/form-data">
+            <section id="upload">
                 <fieldset>
                     <legend>File Upload</legend>
                     <div id="file-select">
@@ -108,22 +115,26 @@
                         <div id="file-select-filename">No file chosen...</div>
                         <input id="file-select-input" type="file" name="file" />
                     </div>
-                    <button id="file-upload-button" type="submit">Upload</button>
-                    <div id="spinner" class="spinner-outer hidden"><div class="spinner-inner"><div></div></div></div>
+                    <div id="upload-button-container">
+                        <button id="file-upload-button" type="submit">Upload</button>
+                        <div id="spinner" class="spinner-outer hidden"><div class="spinner-inner"><div></div></div></div>
+                    </div>
                 </fieldset>
             </section>
+        </form>
 
+        <form id="form-pastebin" method="POST" action="/pastebin">
             <section id="pastebin">
                 <fieldset>
                     <legend>Pastebin</legend>
-                    <textarea id="pastebin-input" autocomplete="off" rows="24" name="text"></textarea>
+                    <textarea id="pastebin-input" autocomplete="off" rows="18" name="paste"></textarea>
                     <button id="pastebin-button" type="submit">Create</button>
                 </fieldset>
             </section>
         </form>
 
         <footer>
-            Copyright (c) {{ now.UTC.Year }} by Kamil Marut |
+            Copyright (c) {{ now.UTC.Year }} by Kamil Marut | Files are deleted after {{ .retentionTime }} |
             <a href="https://github.com/exler/fileigloo" target="_blank" rel="noopener noreferrer">Github</a>
         </footer>
     </main>
