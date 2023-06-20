@@ -1,10 +1,14 @@
 package server
 
 import (
+	"embed"
 	"html/template"
 	"net/http"
 	"time"
 )
+
+//go:embed templates/*
+var TemplatesFS embed.FS
 
 var (
 	templates *template.Template
@@ -14,7 +18,7 @@ var (
 )
 
 func init() {
-	templates = template.Must(template.New("").Funcs(funcMap).ParseGlob("templates/*.html"))
+	templates = template.Must(template.New("").Funcs(funcMap).ParseFS(TemplatesFS, "templates/*.html"))
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, data any) {

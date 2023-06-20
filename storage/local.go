@@ -149,7 +149,9 @@ func (s *LocalStorage) Delete(ctx context.Context, filename string) error {
 
 func (s *LocalStorage) Purge() error {
 	err := filepath.Walk(s.basedir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
+		if err != nil && s.FileNotExists(err) {
+			return nil
+		} else if err != nil {
 			return err
 		}
 

@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="public/logo.svg" width="128">
+    <img src="server/static/logo.svg" width="128">
     <p align="center">❄️ Small and simple online file sharing & pastebin</p>
     <p align="center">
       <img alt="GitHub Test Workflow Status" src="https://img.shields.io/github/actions/workflow/status/exler/fileigloo/test.yml?branch=main">

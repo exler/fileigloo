@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +14,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
 )
+
+//go:embed static/*
+var StaticFS embed.FS
 
 type OptionFn func(*Server)
 
@@ -68,12 +72,12 @@ func New(options ...OptionFn) *Server {
 }
 
 func (s *Server) Run() {
-	fs := http.FileServer(http.Dir("./public"))
+	fs := http.FileServer(http.FS(StaticFS))
 
 	s.router = chi.NewRouter()
 	s.router.Use(httprate.LimitByIP(s.maxRequests, 1*time.Minute))
 
-	s.router.Handle("/public/*", http.StripPrefix("/public/", fs))
+	s.router.Handle("/static/*", fs)
 	s.router.Get("/", s.indexHandler)
 	s.router.Post("/upload", s.uploadHandler)
 	s.router.Post("/pastebin", s.pastebinHandler)
