@@ -86,13 +86,16 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
-	var paste string
-	if paste = r.FormValue("paste"); paste == "" {
+	var pasteContent string
+	if pasteContent = r.FormValue("paste"); pasteContent == "" {
 		http.Error(w, "Paste is empty", http.StatusBadRequest)
+		return
+	} else if formDefender := r.FormValue("defender"); formDefender != "" {
+		http.Error(w, http.StatusText(http.StatusTeapot), http.StatusTeapot)
 		return
 	}
 
-	buf := []byte(paste)
+	buf := []byte(pasteContent)
 
 	file := bytes.NewReader(buf)
 	fileName := "Paste"
