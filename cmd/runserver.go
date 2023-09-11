@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"log"
-	"time"
 
 	"github.com/exler/fileigloo/logger"
 	"github.com/exler/fileigloo/server"
@@ -28,11 +27,6 @@ var serverCmd = &cli.Command{
 			Name:    "rate-limit",
 			Value:   20,
 			EnvVars: []string{"RATE_LIMIT"},
-		},
-		&cli.DurationFlag{
-			Name:    "retention-time",
-			Value:   24 * time.Hour,
-			EnvVars: []string{"RETENTION_TIME"},
 		},
 		&cli.StringFlag{
 			Name:    "storage",

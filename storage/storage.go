@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"io"
-	"time"
 )
 
 type Metadata struct {
@@ -39,8 +38,6 @@ type Storage interface {
 	GetOnlyMetadata(ctx context.Context, filename string) (metadata Metadata, err error)
 	Put(ctx context.Context, filename string, reader io.Reader, metadata Metadata) error
 	Delete(ctx context.Context, filename string) error
-	Purge() error
 	FileNotExists(err error) bool
 	Type() string
-	RetentionTime() time.Duration
 }

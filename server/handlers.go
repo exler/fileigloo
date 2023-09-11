@@ -22,12 +22,26 @@ func generateFileId() string {
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index", map[string]interface{}{
-		"retentionTime": s.storage.RetentionTime().String(),
-	})
+	renderTemplate(w, "index", map[string]interface{}{})
 }
 
-func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) formHandler(w http.ResponseWriter, r *http.Request) {
+	if formDefender := r.FormValue("defender"); formDefender != "" {
+		http.Error(w, http.StatusText(http.StatusTeapot), http.StatusTeapot)
+		return
+	}
+
+	if formType := r.FormValue("form-type"); formType == "file-upload" {
+		s.fileUploadHandler(w, r)
+	} else if formType == "pastebin" {
+		s.pastebinHandler(w, r)
+	} else {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+}
+
+func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if !ValidateContentType(r.Header) {
 		http.Error(w, "Request Content-Type must be 'multipart/form-data'", http.StatusBadRequest)
 		return
@@ -80,8 +94,7 @@ func (s *Server) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
 	renderTemplate(w, "index", map[string]interface{}{
-		"fileUrl":       fileUrl,
-		"retentionTime": s.storage.RetentionTime().String(),
+		"fileUrl": fileUrl,
 	})
 }
 
@@ -89,9 +102,6 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 	var pasteContent string
 	if pasteContent = r.FormValue("paste"); pasteContent == "" {
 		http.Error(w, "Paste is empty", http.StatusBadRequest)
-		return
-	} else if formDefender := r.FormValue("defender"); formDefender != "" {
-		http.Error(w, http.StatusText(http.StatusTeapot), http.StatusTeapot)
 		return
 	}
 
@@ -131,8 +141,7 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
 	renderTemplate(w, "index", map[string]interface{}{
-		"fileUrl":       fileUrl,
-		"retentionTime": s.storage.RetentionTime().String(),
+		"fileUrl": fileUrl,
 	})
 }
 

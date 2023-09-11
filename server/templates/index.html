@@ -112,7 +112,7 @@
         </div>
         {{ end }}
 
-        <form id="form-upload" method="POST" action="/upload" enctype="multipart/form-data">
+        <form id="form-upload" method="POST" action="/" enctype="multipart/form-data">
             <section id="upload">
                 <fieldset>
                     <legend>File Upload</legend>
@@ -122,6 +122,8 @@
                         <input id="file-select-input" type="file" name="file" />
                     </div>
                     <div id="upload-button-container">
+                        <input id="file-upload-defender" type="hidden" name="defender" />
+                        <input id="file-upload-form-type" type="hidden" name="form-type" value="file-upload" />
                         <button id="file-upload-button" type="submit">Upload</button>
                         <div id="spinner" class="spinner-outer hidden"><div class="spinner-inner"><div></div></div></div>
                     </div>
@@ -129,19 +131,20 @@
             </section>
         </form>
 
-        <form id="form-pastebin" method="POST" action="/pastebin">
+        <form id="form-pastebin" method="POST" action="/">
             <section id="pastebin">
                 <fieldset>
                     <legend>Pastebin</legend>
                     <textarea id="pastebin-input" autocomplete="off" rows="18" name="paste"></textarea>
                     <input id="pastebin-defender" type="hidden" name="defender" />
+                    <input id="pastebin-form-type" type="hidden" name="form-type" value="pastebin" />
                     <button id="pastebin-button" type="submit">Create</button>
                 </fieldset>
             </section>
         </form>
 
         <footer>
-            Copyright (c) {{ now.UTC.Year }} by Kamil Marut | Files are deleted after {{ .retentionTime }} |
+            Copyright (c) {{ now.UTC.Year }} by Kamil Marut |
             <a href="https://github.com/exler/fileigloo" target="_blank" rel="noopener noreferrer">Github</a>
         </footer>
     </main>

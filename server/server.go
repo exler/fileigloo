@@ -79,8 +79,7 @@ func (s *Server) Run() {
 
 	s.router.Handle("/static/*", fs)
 	s.router.Get("/", s.indexHandler)
-	s.router.Post("/upload", s.uploadHandler)
-	s.router.Post("/pastebin", s.pastebinHandler)
+	s.router.Post("/", s.formHandler)
 	s.router.Get("/{view:(?:view)}/{fileId}", s.downloadHandler)
 	s.router.Get("/{fileId}", s.downloadHandler)
 
@@ -92,11 +91,6 @@ func (s *Server) Run() {
 		Handler:      s.router,
 	}
 	s.logger.Debug(fmt.Sprintf("Server started [storage=%s]", s.storage.Type()))
-
-	err := s.storage.Purge()
-	if err != nil {
-		s.logger.Error(err)
-	}
 
 	go func() {
 		err := srv.ListenAndServe()

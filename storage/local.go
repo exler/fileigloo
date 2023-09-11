@@ -8,24 +8,20 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 type LocalStorage struct {
 	Storage
 	basedir string
-
-	retentionTime time.Duration
 }
 
-func NewLocalStorage(basedir string, retentionTime time.Duration) (*LocalStorage, error) {
+func NewLocalStorage(basedir string) (*LocalStorage, error) {
 	if basedir[len(basedir)-1:] != "/" {
 		basedir += "/"
 	}
 
 	storage := &LocalStorage{
-		basedir:       basedir,
-		retentionTime: retentionTime,
+		basedir: basedir,
 	}
 
 	return storage, nil
@@ -33,10 +29,6 @@ func NewLocalStorage(basedir string, retentionTime time.Duration) (*LocalStorage
 
 func (s *LocalStorage) Type() string {
 	return "local"
-}
-
-func (s *LocalStorage) RetentionTime() time.Duration {
-	return s.retentionTime
 }
 
 func (s *LocalStorage) List(ctx context.Context) (filenames []string, metadata []Metadata, err error) {
@@ -145,29 +137,6 @@ func (s *LocalStorage) Delete(ctx context.Context, filename string) error {
 	}
 
 	return nil
-}
-
-func (s *LocalStorage) Purge() error {
-	err := filepath.Walk(s.basedir, func(path string, info os.FileInfo, err error) error {
-		if err != nil && s.FileNotExists(err) {
-			return nil
-		} else if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		if info.ModTime().Before(time.Now().Add(-s.retentionTime)) {
-			err = os.Remove(path)
-			return err
-		}
-
-		return nil
-	})
-
-	return err
 }
 
 func (s *LocalStorage) FileNotExists(err error) bool {
