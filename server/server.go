@@ -50,6 +50,12 @@ func Port(port int) OptionFn {
 	}
 }
 
+func ExtraFooterText(text string) OptionFn {
+	return func(s *Server) {
+		s.extraFooterText = text
+	}
+}
+
 type Server struct {
 	logger *logger.Logger
 
@@ -59,6 +65,8 @@ type Server struct {
 
 	maxUploadSize int64
 	maxRequests   int
+
+	extraFooterText string
 
 	port int
 }

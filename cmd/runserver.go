@@ -12,6 +12,11 @@ var serverCmd = &cli.Command{
 	Name:  "runserver",
 	Usage: "Run web server",
 	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name: "extra-footer",
+			Usage: "Text to be added to the footer of the page",
+			EnvVars: []string{"EXTRA_FOOTER"},
+		},
 		&cli.IntFlag{
 			Name:    "port",
 			Aliases: []string{"p"},
@@ -77,6 +82,7 @@ var serverCmd = &cli.Command{
 			server.MaxUploadSize(cCtx.Int64("max-upload-size")),
 			server.MaxRequests(cCtx.Int("rate-limit")),
 			server.UseLogger(logger.NewLogger(cCtx.String("sentry-dsn"), cCtx.String("sentry-environment"))),
+			server.ExtraFooterText(cCtx.String("extra-footer")),
 		}
 
 		storage, err := GetStorage(cCtx)

@@ -22,7 +22,9 @@ func generateFileId() string {
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index", map[string]interface{}{})
+	renderTemplate(w, "index", map[string]interface{}{
+		"extraFooterText": s.extraFooterText,
+	})
 }
 
 func (s *Server) formHandler(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +97,7 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	renderTemplate(w, "index", map[string]interface{}{
 		"fileUrl": fileUrl,
+		"extraFooterText": s.extraFooterText,
 	})
 }
 
@@ -142,6 +145,7 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 
 	renderTemplate(w, "index", map[string]interface{}{
 		"fileUrl": fileUrl,
+		"extraFooterText": s.extraFooterText,
 	})
 }
 
