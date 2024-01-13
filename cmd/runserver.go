@@ -13,8 +13,8 @@ var serverCmd = &cli.Command{
 	Usage: "Run web server",
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name: "extra-footer",
-			Usage: "Text to be added to the footer of the page",
+			Name:    "extra-footer",
+			Usage:   "Text to be added to the footer of the page",
 			EnvVars: []string{"EXTRA_FOOTER"},
 		},
 		&cli.IntFlag{
@@ -37,6 +37,12 @@ var serverCmd = &cli.Command{
 			Name:    "storage",
 			Value:   "local",
 			EnvVars: []string{"STORAGE"},
+		},
+		&cli.StringFlag{
+			Name:    "site-password",
+			Value:   "",
+			Usage:   "Password to protect the site with",
+			EnvVars: []string{"SITE_PASSWORD"},
 		},
 		&cli.StringFlag{
 			Name:    "upload-directory",
@@ -83,6 +89,7 @@ var serverCmd = &cli.Command{
 			server.MaxRequests(cCtx.Int("rate-limit")),
 			server.UseLogger(logger.NewLogger(cCtx.String("sentry-dsn"), cCtx.String("sentry-environment"))),
 			server.ExtraFooterText(cCtx.String("extra-footer")),
+			server.SitePassword(cCtx.String("site-password")),
 		}
 
 		storage, err := GetStorage(cCtx)

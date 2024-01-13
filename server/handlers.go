@@ -15,6 +15,7 @@ import (
 	"github.com/exler/fileigloo/random"
 	"github.com/exler/fileigloo/storage"
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func generateFileId() string {
@@ -25,6 +26,32 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "index", map[string]interface{}{
 		"extraFooterText": s.extraFooterText,
 	})
+}
+
+func (s *Server) loginGETHandler(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "login", map[string]interface{}{})
+}
+
+func (s *Server) loginPOSTHandler(w http.ResponseWriter, r *http.Request) {
+	password := r.FormValue("site-password")
+	if bcrypt.CompareHashAndPassword([]byte(s.sitePasswordHash), []byte(password)) != nil {
+		renderTemplate(w, "login", map[string]interface{}{
+			"wrongPassword": true,
+		})
+		return
+	}
+
+	cookie := http.Cookie{
+		Name:     "site_password",
+		Value:    s.sitePasswordHash,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+		Secure:   r.TLS != nil,
+	}
+
+	http.SetCookie(w, &cookie)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (s *Server) formHandler(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +123,7 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
 	renderTemplate(w, "index", map[string]interface{}{
-		"fileUrl": fileUrl,
+		"fileUrl":         fileUrl,
 		"extraFooterText": s.extraFooterText,
 	})
 }
@@ -144,7 +171,7 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
 	renderTemplate(w, "index", map[string]interface{}{
-		"fileUrl": fileUrl,
+		"fileUrl":         fileUrl,
 		"extraFooterText": s.extraFooterText,
 	})
 }

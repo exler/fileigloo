@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Small and simple online file sharing & pastebin" />
+    <title>Fileigloo</title>
+
+    <link rel="preconnect" href="https://fonts.bunny.net" />
+    <link rel="stylesheet" href="https://fonts.bunny.net/css?family=cantarell:400" />
+
+    <link rel="preload" href="/static/pcss-1.1.2.min.css" as="style" />
+
+    <link rel="icon" href="/static/favicon.ico" />
+    <link rel="stylesheet" href="/static/pcss-1.1.2.min.css" />
+
+    <style>
+        body {
+            font-family: 'Cantarell', sans-serif;
+        }
+
+        #form-login-label {
+            font-weight: bold;
+        }
+
+        #form-login-input {
+            margin-top: 0.75rem;
+        }
+
+        .errors {
+            color: red;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <form id="form-login" method="POST" action="/login">
+            <center>
+            <label id="form-login-label" for="form-login-input">Site Password</label>
+            <input id="form-login-input" type="password" name="site-password" required />
+            <div class="errors">
+            {{ if .wrongPassword }}<span>Wrong password</span>{{ end }}
+            </div>
+            <button id="form-button" type="submit">Login</button>
+            </center>
+        </form>
+    </main>
+</body>
+
+</html>

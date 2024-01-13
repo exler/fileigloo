@@ -13,6 +13,7 @@ import (
 	"github.com/exler/fileigloo/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //go:embed static/*
@@ -56,15 +57,35 @@ func ExtraFooterText(text string) OptionFn {
 	}
 }
 
+func SitePassword(password string) OptionFn {
+	return func(s *Server) {
+		if password == "" {
+			return
+		}
+
+		sitePasswordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			s.logger.Fatal(err)
+		}
+
+		s.sitePasswordHash = string(sitePasswordHash)
+	}
+}
+
 type Server struct {
 	logger *logger.Logger
 
 	router chi.Router
 
+	// protectedRouter is not necessarily protected, only if the SitePassword option is used
+	protectedRouter chi.Router
+
 	storage storage.Storage
 
 	maxUploadSize int64
 	maxRequests   int
+
+	sitePasswordHash string
 
 	extraFooterText string
 
@@ -82,14 +103,28 @@ func New(options ...OptionFn) *Server {
 func (s *Server) Run() {
 	fs := http.FileServer(http.FS(StaticFS))
 
+	limiter := httprate.LimitByIP(s.maxRequests, 1*time.Minute)
+
 	s.router = chi.NewRouter()
-	s.router.Use(httprate.LimitByIP(s.maxRequests, 1*time.Minute))
+	s.router.Use(limiter)
+
+	s.protectedRouter = chi.NewRouter()
+	s.protectedRouter.Use(limiter)
 
 	s.router.Handle("/static/*", fs)
-	s.router.Get("/", s.indexHandler)
-	s.router.Post("/", s.formHandler)
 	s.router.Get("/{view:(?:view)}/{fileId}", s.downloadHandler)
 	s.router.Get("/{fileId}", s.downloadHandler)
+
+	if s.sitePasswordHash != "" {
+		s.router.Get("/login", s.loginGETHandler)
+		s.router.Post("/login", s.loginPOSTHandler)
+		s.protectedRouter.Use(SitePasswordMiddleware(s.sitePasswordHash))
+	}
+
+	s.protectedRouter.Get("/", s.indexHandler)
+	s.protectedRouter.Post("/", s.formHandler)
+
+	s.router.Mount("/", s.protectedRouter)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.port),
