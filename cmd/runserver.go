@@ -3,7 +3,6 @@ package cmd
 import (
 	"log"
 
-	"github.com/exler/fileigloo/logger"
 	"github.com/exler/fileigloo/server"
 	"github.com/urfave/cli/v2"
 )
@@ -30,7 +29,7 @@ var serverCmd = &cli.Command{
 		},
 		&cli.IntFlag{
 			Name:    "rate-limit",
-			Value:   20,
+			Value:   100,
 			EnvVars: []string{"RATE_LIMIT"},
 		},
 		&cli.StringFlag{
@@ -40,7 +39,6 @@ var serverCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:    "site-password",
-			Value:   "",
 			Usage:   "Password to protect the site with",
 			EnvVars: []string{"SITE_PASSWORD"},
 		},
@@ -79,6 +77,7 @@ var serverCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:    "sentry-environment",
+			Value:   "undefined",
 			EnvVars: []string{"SENTRY_ENVIRONMENT"},
 		},
 	},
@@ -87,7 +86,7 @@ var serverCmd = &cli.Command{
 			server.Port(cCtx.Int("port")),
 			server.MaxUploadSize(cCtx.Int64("max-upload-size")),
 			server.MaxRequests(cCtx.Int("rate-limit")),
-			server.UseLogger(logger.NewLogger(cCtx.String("sentry-dsn"), cCtx.String("sentry-environment"))),
+			server.Sentry(cCtx.String("sentry-dsn"), cCtx.String("sentry-environment")),
 			server.ExtraFooterText(cCtx.String("extra-footer")),
 			server.SitePassword(cCtx.String("site-password")),
 		}

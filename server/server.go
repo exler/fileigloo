@@ -11,7 +11,10 @@ import (
 
 	"github.com/exler/fileigloo/logger"
 	"github.com/exler/fileigloo/storage"
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -39,9 +42,22 @@ func UseStorage(storage storage.Storage) OptionFn {
 	}
 }
 
-func UseLogger(logger *logger.Logger) OptionFn {
+func Sentry(sentryDSN, sentryEnvironment string) OptionFn {
 	return func(s *Server) {
-		s.logger = logger
+		if sentryDSN == "" {
+			return
+		}
+
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:              sentryDSN,
+			Environment:      sentryEnvironment,
+			EnableTracing:    true,
+			TracesSampleRate: 0.5,
+		})
+		if err != nil {
+			s.logger.Error(err)
+		}
+		defer sentry.Flush(time.Second)
 	}
 }
 
@@ -65,7 +81,7 @@ func SitePassword(password string) OptionFn {
 
 		sitePasswordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
-			s.logger.Fatal(err)
+			s.logger.Error(err)
 		}
 
 		s.sitePasswordHash = string(sitePasswordHash)
@@ -93,7 +109,9 @@ type Server struct {
 }
 
 func New(options ...OptionFn) *Server {
-	s := &Server{}
+	s := &Server{
+		logger: logger.NewLogger(),
+	}
 	for _, optionFn := range options {
 		optionFn(s)
 	}
@@ -104,22 +122,32 @@ func (s *Server) Run() {
 	fs := http.FileServer(http.FS(StaticFS))
 
 	limiter := httprate.LimitByIP(s.maxRequests, 1*time.Minute)
+	sentryMiddleware := sentryhttp.New(sentryhttp.Options{
+		Repanic: true,
+	})
 
 	s.router = chi.NewRouter()
+	s.router.Use(middleware.Logger)
+	s.router.Use(middleware.Recoverer)
 	s.router.Use(limiter)
-
-	s.protectedRouter = chi.NewRouter()
-	s.protectedRouter.Use(limiter)
+	s.router.Use(sentryMiddleware.Handle)
 
 	s.router.Handle("/static/*", fs)
 	s.router.Get("/{view:(?:view)}/{fileId}", s.downloadHandler)
 	s.router.Get("/{fileId}", s.downloadHandler)
+
+	s.protectedRouter = chi.NewRouter()
+	s.protectedRouter.Use(middleware.Logger)
+	s.protectedRouter.Use(middleware.Recoverer)
+	s.protectedRouter.Use(limiter)
 
 	if s.sitePasswordHash != "" {
 		s.router.Get("/login", s.loginGETHandler)
 		s.router.Post("/login", s.loginPOSTHandler)
 		s.protectedRouter.Use(SitePasswordMiddleware(s.sitePasswordHash))
 	}
+
+	s.protectedRouter.Use(sentryMiddleware.Handle)
 
 	s.protectedRouter.Get("/", s.indexHandler)
 	s.protectedRouter.Post("/", s.formHandler)
