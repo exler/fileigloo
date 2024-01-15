@@ -52,7 +52,7 @@ func Sentry(sentryDSN, sentryEnvironment string) OptionFn {
 			Dsn:              sentryDSN,
 			Environment:      sentryEnvironment,
 			EnableTracing:    true,
-			TracesSampleRate: 0.5,
+			TracesSampleRate: 0.05,
 		})
 		if err != nil {
 			s.logger.Error(err)
