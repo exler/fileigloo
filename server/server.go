@@ -42,7 +42,7 @@ func UseStorage(storage storage.Storage) OptionFn {
 	}
 }
 
-func Sentry(sentryDSN, sentryEnvironment string) OptionFn {
+func Sentry(sentryDSN, sentryEnvironment string, sentryTracesSampleRate float64) OptionFn {
 	return func(s *Server) {
 		if sentryDSN == "" {
 			return
@@ -51,8 +51,8 @@ func Sentry(sentryDSN, sentryEnvironment string) OptionFn {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn:              sentryDSN,
 			Environment:      sentryEnvironment,
-			EnableTracing:    true,
-			TracesSampleRate: 0.05,
+			EnableTracing:    sentryTracesSampleRate > 0,
+			TracesSampleRate: sentryTracesSampleRate,
 		})
 		if err != nil {
 			s.logger.Error(err)

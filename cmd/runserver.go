@@ -80,13 +80,18 @@ var serverCmd = &cli.Command{
 			Value:   "undefined",
 			EnvVars: []string{"SENTRY_ENVIRONMENT"},
 		},
+		&cli.Float64Flag{
+			Name:    "sentry-traces-sample-rate",
+			Value:   0,
+			EnvVars: []string{"SENTRY_TRACES_SAMPLE_RATE"},
+		},
 	},
 	Action: func(cCtx *cli.Context) error {
 		serverOptions := []server.OptionFn{
 			server.Port(cCtx.Int("port")),
 			server.MaxUploadSize(cCtx.Int64("max-upload-size")),
 			server.MaxRequests(cCtx.Int("rate-limit")),
-			server.Sentry(cCtx.String("sentry-dsn"), cCtx.String("sentry-environment")),
+			server.Sentry(cCtx.String("sentry-dsn"), cCtx.String("sentry-environment"), cCtx.Float64("sentry-traces-sample-rate")),
 			server.ExtraFooterText(cCtx.String("extra-footer")),
 			server.SitePassword(cCtx.String("site-password")),
 		}
