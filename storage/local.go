@@ -101,8 +101,8 @@ func (s *LocalStorage) Put(ctx context.Context, filename string, reader io.Reade
 	}
 
 	path := filepath.Join(s.basedir, filename)
-	//#nosec
-	if f, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600); err != nil {
+	f, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600) // #nosec G304
+	if err != nil {
 		return err
 	}
 	defer f.Close()
@@ -117,8 +117,8 @@ func (s *LocalStorage) Put(ctx context.Context, filename string, reader io.Reade
 		return err
 	}
 
-	//#nosec
-	if mf, err = os.OpenFile(metadataPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600); err != nil {
+	mf, err = os.OpenFile(metadataPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600) // #nosec G304
+	if err != nil {
 		return err
 	}
 	defer mf.Close()
