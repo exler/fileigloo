@@ -24,12 +24,12 @@ func GetStorage(cCtx *cli.Context) (chosenStorage storage.Storage, err error) {
 
 		chosenStorage, err = storage.NewLocalStorage(udir)
 	case "s3":
-		bucket := cCtx.String("s3-bucket")
-		region := cCtx.String("s3-region")
-		accessKey := cCtx.String("aws-access-key")
-		secretKey := cCtx.String("aws-secret-key")
-		sessionToken := cCtx.String("aws-session-token")
-		endpointUrl := cCtx.String("aws-endpoint-url")
+		bucket := cCtx.String("aws-s3-bucket")
+		region := cCtx.String("aws-s3-region")
+		accessKey := cCtx.String("aws-s3-access-key")
+		secretKey := cCtx.String("aws-s3-secret-key")
+		sessionToken := cCtx.String("aws-s3-session-token")
+		endpointUrl := cCtx.String("aws-s3-endpoint-url")
 
 		chosenStorage, err = storage.NewS3Storage(accessKey, secretKey, sessionToken, endpointUrl, region, bucket)
 	default:

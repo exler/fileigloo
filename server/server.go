@@ -67,12 +67,6 @@ func Port(port int) OptionFn {
 	}
 }
 
-func ExtraFooterText(text string) OptionFn {
-	return func(s *Server) {
-		s.extraFooterText = text
-	}
-}
-
 func SitePassword(password string) OptionFn {
 	return func(s *Server) {
 		if password == "" {
@@ -102,8 +96,6 @@ type Server struct {
 	maxRequests   int
 
 	sitePasswordHash string
-
-	extraFooterText string
 
 	port int
 }

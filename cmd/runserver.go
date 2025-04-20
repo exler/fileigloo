@@ -11,11 +11,6 @@ var serverCmd = &cli.Command{
 	Name:  "runserver",
 	Usage: "Run web server",
 	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:    "extra-footer",
-			Usage:   "Text to be added to the footer of the page",
-			EnvVars: []string{"EXTRA_FOOTER"},
-		},
 		&cli.IntFlag{
 			Name:    "port",
 			Aliases: []string{"p"},
@@ -48,28 +43,28 @@ var serverCmd = &cli.Command{
 			EnvVars: []string{"UPLOAD_DIRECTORY"},
 		},
 		&cli.StringFlag{
-			Name:    "s3-bucket",
-			EnvVars: []string{"S3_BUCKET"},
+			Name:    "aws-s3-bucket",
+			EnvVars: []string{"AWS_S3_BUCKET"},
 		},
 		&cli.StringFlag{
-			Name:    "s3-region",
-			EnvVars: []string{"S3_REGION"},
+			Name:    "aws-s3-region",
+			EnvVars: []string{"AWS_S3_REGION"},
 		},
 		&cli.StringFlag{
-			Name:    "aws-access-key",
-			EnvVars: []string{"AWS_ACCESS_KEY"},
+			Name:    "aws-s3-access-key",
+			EnvVars: []string{"AWS_S3_ACCESS_KEY"},
 		},
 		&cli.StringFlag{
-			Name:    "aws-secret-key",
-			EnvVars: []string{"AWS_SECRET_KEY"},
+			Name:    "aws-s3-secret-key",
+			EnvVars: []string{"AWS_S3_SECRET_KEY"},
 		},
 		&cli.StringFlag{
-			Name:    "aws-session-token",
-			EnvVars: []string{"AWS_SESSION_TOKEN"},
+			Name:    "aws-s3-session-token",
+			EnvVars: []string{"AWS_S3_SESSION_TOKEN"},
 		},
 		&cli.StringFlag{
-			Name:    "aws-endpoint-url",
-			EnvVars: []string{"AWS_ENDPOINT_URL"},
+			Name:    "aws-s3-endpoint-url",
+			EnvVars: []string{"AWS_S3_ENDPOINT_URL"},
 		},
 		&cli.StringFlag{
 			Name:    "sentry-dsn",
@@ -92,7 +87,6 @@ var serverCmd = &cli.Command{
 			server.MaxUploadSize(cCtx.Int64("max-upload-size")),
 			server.MaxRequests(cCtx.Int("rate-limit")),
 			server.Sentry(cCtx.String("sentry-dsn"), cCtx.String("sentry-environment"), cCtx.Float64("sentry-traces-sample-rate")),
-			server.ExtraFooterText(cCtx.String("extra-footer")),
 			server.SitePassword(cCtx.String("site-password")),
 		}
 

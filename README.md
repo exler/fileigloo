@@ -9,7 +9,7 @@
 
 ## Requirements
 
-* Go >= 1.20
+* Go >= 1.24
 
 ## Configuration
 
@@ -25,44 +25,22 @@ $ export STORAGE=local
 $ export UPLOAD_DIRECTORY=uploads/
 ```
 
-### Amazon S3
+### S3-compatible storage
 
 ```bash
 # Override storage provider
 $ export STORAGE=s3
 
 # Specify S3 bucket and region
-$ export S3_BUCKET=storage-bucket
-$ export S3_REGION=eu-central-1
+$ export AWS_S3_BUCKET=storage-bucket
+$ export AWS_S3_REGION=eu-central-1
 
 # Specify AWS keys for accessing S3
-$ export AWS_ACCESS_KEY=
-$ export AWS_SECRET_KEY=
+$ export AWS_S3_ACCESS_KEY=
+$ export AWS_S3_SECRET_KEY=
 
 # Optionally, specify AWS session token for temporary credentials
-$ export AWS_SESSION_TOKEN=
-```
-
-### Cloudflare R2
-
-Cloudflare R2 implements S3 API, so we use the `s3` storage here as well.
-
-```bash
-# Override storage provider
-$ export STORAGE=s3
-
-# Specify R2 bucket
-$ export S3_BUCKET=storage-bucket
-
-# Region must be 'auto'
-$ export S3_REGION=auto
-
-# Specify R2 keys for accessing the bucket
-$ export AWS_ACCESS_KEY=
-$ export AWS_SECRET_KEY=
-
-# Specify the bucket URL
-$ export AWS_ENDPOINT_URL=https://${accountid}.r2.cloudflarestorage.com
+$ export AWS_S3_SESSION_TOKEN=
 ```
 
 ## Usage
@@ -85,6 +63,6 @@ GLOBAL OPTIONS:
 
 ## License
 
-Copyright (c) 2021-2023 by ***Kamil Marut***
+Copyright (c) 2021-2025 by ***Kamil Marut***
 
 `Fileigloo` is under the terms of the [MIT License](https://www.tldrlegal.com/l/mit), following all clarifications stated in the [license file](LICENSE).
