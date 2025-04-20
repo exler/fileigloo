@@ -4,7 +4,7 @@ fileigloo
 
 ### Visual Studio Code ###
 .vscode/
-__debug_bin
+__debug_bin*
 
 ### Go ###
 # Binaries for programs and plugins
