@@ -68,15 +68,28 @@ func (s *Server) formHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+const defaultMaxMemory = 32 << 20 // 32 MB
+
 func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if !ValidateContentType(r.Header) {
 		http.Error(w, "Request Content-Type must be 'multipart/form-data'", http.StatusBadRequest)
 		return
 	}
 
+	s.logger.Debug(fmt.Sprintf("File upload request [client_ip=%s]", r.RemoteAddr))
+
 	var file multipart.File
 	var fileHeader *multipart.FileHeader
 	var err error
+
+	// Parse the multipart form
+	if err = r.ParseMultipartForm(defaultMaxMemory); err != nil {
+		s.logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	// Get the file from the form
 	if file, fileHeader, err = r.FormFile("file"); err != nil {
 		s.logger.Error(err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
