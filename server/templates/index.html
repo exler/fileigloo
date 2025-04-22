@@ -135,6 +135,12 @@
             justify-content: space-between;
             align-items: center;
         }
+
+        .error-message {
+            color: #ff4848;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 
@@ -187,6 +193,7 @@
                         <div id="file-select-filename">No file chosen...</div>
                         <input id="file-select-input" type="file" name="file" />
                     </div>
+                    <div id="file-size-error" class="error-message hidden"></div>
                     <div id="upload-button-container">
                         <input id="file-upload-defender" type="hidden" name="defender" />
                         <input id="file-upload-form-type" type="hidden" name="form-type" value="file-upload" />
@@ -232,6 +239,11 @@
             let fileInput = document.getElementById("file-select-input");
             let fileUploadButton = document.getElementById("file-upload-button");
             let selectFilename = document.getElementById("file-select-filename");
+            let fileSizeError = document.getElementById("file-size-error");
+            
+            // Max upload size in bytes ({{ if gt .maxUploadSize 0 }}{{ .maxUploadSize }}{{ else }}0{{ end }})
+            const maxUploadSize = {{ if gt .maxUploadSize 0 }}{{ .maxUploadSize }}{{ else }}0{{ end }};
+            
             fileSelect.onclick = function () { fileInput.click(); };
             fileSelect.ondragover = function (event) { event.stopPropagation(); event.preventDefault(); };
             fileSelect.ondrop = function (event) {
@@ -239,11 +251,25 @@
                 event.preventDefault();
                 fileInput.files = event.dataTransfer.files;
                 selectFilename.innerHTML = fileInput.files[0].name;
+                checkFileSize(fileInput.files[0]);
             };
             fileInput.onchange = function () {
                 let file = fileInput.files[0];
                 selectFilename.innerHTML = file.name;
+                checkFileSize(file);
             };
+
+            function checkFileSize(file) {
+                if (maxUploadSize > 0 && file.size > maxUploadSize) {
+                    const maxSizeMB = Math.round(maxUploadSize / (1024 * 1000));
+                    fileSizeError.textContent = `File is too big! Max upload size: ${maxSizeMB}MB`;
+                    fileSizeError.classList.remove("hidden");
+                    fileUploadButton.disabled = true;
+                } else {
+                    fileSizeError.classList.add("hidden");
+                    fileUploadButton.disabled = false;
+                }
+            }
 
             let formUpload = document.getElementById("form-upload");
             let formPastebin = document.getElementById("form-pastebin");
@@ -262,8 +288,18 @@
                 }
             }
 
-            formUpload.addEventListener("submit", hideResult);
-            formUpload.addEventListener("submit", showSpinner);
+            formUpload.addEventListener("submit", function(event) {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    if (maxUploadSize > 0 && file.size > maxUploadSize) {
+                        event.preventDefault();
+                        return false;
+                    }
+                }
+                hideResult();
+                showSpinner();
+            });
+            
             formPastebin.addEventListener("submit", hideResult);
             formPastebin.addEventListener("submit", showSpinner);
 
