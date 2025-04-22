@@ -24,9 +24,9 @@ var StaticFS embed.FS
 
 type OptionFn func(*Server)
 
-func MaxUploadSize(kbytes int64) OptionFn {
+func MaxUploadSize(megabytes int64) OptionFn {
 	return func(s *Server) {
-		s.maxUploadSize = kbytes * 1024
+		s.maxUploadSize = megabytes * 1024 * 1024
 	}
 }
 
@@ -92,6 +92,7 @@ type Server struct {
 
 	storage storage.Storage
 
+	// maxUploadSize is in bytes
 	maxUploadSize int64
 	maxRequests   int
 

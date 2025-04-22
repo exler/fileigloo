@@ -103,7 +103,7 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	contentLength := fileHeader.Size
 
 	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
-		http.Error(w, fmt.Sprintf("File is too big! Max upload size: %dMB", s.maxUploadSize/(1024*1000)), http.StatusRequestEntityTooLarge)
+		http.Error(w, fmt.Sprintf("File is too big! Max upload size: %dMB", s.maxUploadSize/(1024*1024)), http.StatusRequestEntityTooLarge)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 	contentLength := int64(len(buf))
 
 	if s.maxUploadSize > 0 && contentLength > s.maxUploadSize {
-		http.Error(w, fmt.Sprintf("File is too big! Max upload size: %dMB", s.maxUploadSize/(1024*1000)), http.StatusRequestEntityTooLarge)
+		http.Error(w, fmt.Sprintf("File is too big! Max upload size: %dMB", s.maxUploadSize/(1024*1024)), http.StatusRequestEntityTooLarge)
 		return
 	}
 

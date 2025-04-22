@@ -261,7 +261,7 @@
 
             function checkFileSize(file) {
                 if (maxUploadSize > 0 && file.size > maxUploadSize) {
-                    const maxSizeMB = Math.round(maxUploadSize / (1024 * 1000));
+                    const maxSizeMB = Math.round(maxUploadSize / (1024 * 1024));
                     fileSizeError.textContent = `File is too big! Max upload size: ${maxSizeMB}MB`;
                     fileSizeError.classList.remove("hidden");
                     fileUploadButton.disabled = true;

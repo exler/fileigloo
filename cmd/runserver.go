@@ -21,6 +21,7 @@ var serverCmd = &cli.Command{
 			Name:    "max-upload-size",
 			Value:   0,
 			EnvVars: []string{"MAX_UPLOAD_SIZE"},
+			Usage:   "Maximum upload size in megabytes (0 for unlimited)",
 		},
 		&cli.IntFlag{
 			Name:    "rate-limit",
