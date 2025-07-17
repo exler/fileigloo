@@ -139,6 +139,25 @@ func (s *LocalStorage) Delete(ctx context.Context, filename string) error {
 	return nil
 }
 
+func (s *LocalStorage) DeleteExpired(ctx context.Context) (deletedCount int, err error) {
+	filenames, metadata, err := s.List(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	for i, filename := range filenames {
+		if IsMetadataExpired(metadata[i]) {
+			if err := s.Delete(ctx, filename); err != nil {
+				// Log error but continue with other files
+				continue
+			}
+			deletedCount++
+		}
+	}
+
+	return deletedCount, nil
+}
+
 func (s *LocalStorage) FileNotExists(err error) bool {
 	if err == nil {
 		return false

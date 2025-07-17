@@ -151,6 +151,10 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Get optional password
 	password := r.FormValue("password")
 
+	// Get optional expiration in hours (1-24)
+	expirationHours := ParseExpirationHours(r.FormValue("expiration"))
+	expirationTime := CalculateExpirationTime(expirationHours)
+
 	var fileId string
 	for {
 		fileId = generateFileId()
@@ -172,6 +176,7 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		ContentType:   contentType,
 		ContentLength: strconv.FormatInt(contentLength, 10),
 		PasswordHash:  passwordHash,
+		ExpiresAt:     expirationTime,
 	}
 	if err = s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
 		s.logger.Error(err)
@@ -234,6 +239,10 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 	// Get optional password
 	password := r.FormValue("password")
 
+	// Get optional expiration in hours (1-24)
+	expirationHours := ParseExpirationHours(r.FormValue("expiration"))
+	expirationTime := CalculateExpirationTime(expirationHours)
+
 	var fileId string
 	for {
 		fileId = generateFileId()
@@ -255,6 +264,7 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 		ContentType:   contentType,
 		ContentLength: strconv.FormatInt(contentLength, 10),
 		PasswordHash:  passwordHash,
+		ExpiresAt:     expirationTime,
 	}
 	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
 		s.logger.Error(err)
@@ -303,6 +313,12 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer reader.Close()
+
+	// Check if file has expired
+	if IsExpired(metadata.ExpiresAt) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
 
 	// Check if file is password protected
 	if metadata.PasswordHash != "" {

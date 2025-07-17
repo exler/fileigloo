@@ -180,6 +180,10 @@ curl -c cookies.txt -X POST \
             </div>
 
             <div class="parameter">
+                <span class="parameter-name">expiration</span> <span class="parameter-type">(form field, optional)</span> - Expiration time in hours (1-24, default: 24)
+            </div>
+
+            <div class="parameter">
                 <span class="parameter-name">Accept</span> <span class="parameter-type">(header, optional)</span> - Set to "application/json" for JSON response
             </div>
 
@@ -208,6 +212,16 @@ curl -X POST \
   "fileId": "abc123def456",
   "fileUrl": "{{.baseURL}}/view/abc123def456"
 }</pre>
+            </div>
+
+            <h3>Example: Upload a file with 2-hour expiration</h3>
+            <div class="code-block">
+                <pre># Upload a file that expires in 2 hours
+curl -X POST \
+  -H "Accept: application/json" \
+  -F "file=@/path/to/your/file.txt" \
+  -F "expiration=2" \
+  {{.baseURL}}/</pre>
             </div>
 
             <h3>Example: Upload a file (password-protected instance)</h3>
@@ -242,6 +256,10 @@ curl -b cookies.txt -X POST \
             </div>
 
             <div class="parameter">
+                <span class="parameter-name">expiration</span> <span class="parameter-type">(form field, optional)</span> - Expiration time in hours (1-24, default: 24)
+            </div>
+
+            <div class="parameter">
                 <span class="parameter-name">Accept</span> <span class="parameter-type">(header, optional)</span> - Set to "application/json" for JSON response
             </div>
 
@@ -270,6 +288,16 @@ curl -X POST \
   "fileId": "def456ghi789",
   "fileUrl": "{{.baseURL}}/view/def456ghi789"
 }</pre>
+            </div>
+
+            <h3>Example: Create a paste with 4-hour expiration</h3>
+            <div class="code-block">
+                <pre># Create a paste that expires in 4 hours
+curl -X POST \
+  -H "Accept: application/json" \
+  -d "text=This will expire in 4 hours" \
+  -d "expiration=4" \
+  {{.baseURL}}/</pre>
             </div>
 
             <h3>Example: Create a paste from file content</h3>
@@ -399,6 +427,19 @@ Content-Type: text/html
             <div class="parameter">
                 <span class="parameter-name">Salt Length:</span> 16 bytes
             </div>
+        </div>
+
+        <div class="api-section">
+            <h2>File Expiration</h2>
+            <p>All uploaded files and pastes can have an expiration time set. Files are automatically deleted when they expire.</p>
+            
+            <h3>Expiration Options</h3>
+            <ul>
+                <li><strong>Default:</strong> 24 hours (1 day)</li>
+                <li><strong>Available Options:</strong> 1, 2, 4, 12, or 24 hours</li>
+                <li><strong>API Parameter:</strong> Any value between 1-24 hours</li>
+                <li><strong>Automatic Cleanup:</strong> Expired files return 404 Not Found</li>
+            </ul>
         </div>
 
         <div class="api-section">

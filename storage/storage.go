@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"io"
+	"time"
 )
 
 type Metadata struct {
@@ -10,6 +11,7 @@ type Metadata struct {
 	ContentType   string
 	ContentLength string
 	PasswordHash  string // Argon2id hash of password (empty if no password)
+	ExpiresAt     string // RFC3339 timestamp when file expires (empty if no expiration)
 }
 
 func MetadataToStringMap(metadata Metadata) map[string]*string {
@@ -19,6 +21,7 @@ func MetadataToStringMap(metadata Metadata) map[string]*string {
 	m["Content-Type"] = &metadata.ContentType
 	m["Content-Length"] = &metadata.ContentLength
 	m["Password-Hash"] = &metadata.PasswordHash
+	m["Expires-At"] = &metadata.ExpiresAt
 
 	return m
 }
@@ -31,7 +34,26 @@ func StringMapToMetadata(m map[string]*string) Metadata {
 		PasswordHash:  *m["Password-Hash"],
 	}
 
+	// Handle backward compatibility for files without expiration
+	if expiresAt, exists := m["Expires-At"]; exists && expiresAt != nil {
+		metadata.ExpiresAt = *expiresAt
+	}
+
 	return metadata
+}
+
+// IsMetadataExpired checks if metadata has expired
+func IsMetadataExpired(metadata Metadata) bool {
+	if metadata.ExpiresAt == "" {
+		return false // No expiration set
+	}
+
+	expiresAt, err := time.Parse(time.RFC3339, metadata.ExpiresAt)
+	if err != nil {
+		return false // Invalid timestamp, treat as not expired
+	}
+
+	return time.Now().After(expiresAt)
 }
 
 type Storage interface {
@@ -41,6 +63,7 @@ type Storage interface {
 	GetOnlyMetadata(ctx context.Context, filename string) (metadata Metadata, err error)
 	Put(ctx context.Context, filename string, reader io.Reader, metadata Metadata) error
 	Delete(ctx context.Context, filename string) error
+	DeleteExpired(ctx context.Context) (deletedCount int, err error)
 	FileNotExists(err error) bool
 	Type() string
 }

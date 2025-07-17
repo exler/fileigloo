@@ -11,7 +11,9 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/argon2"
 )
@@ -146,4 +148,43 @@ func VerifyPassword(password, hashedPassword string) (bool, error) {
 	hash := argon2.IDKey([]byte(password), salt, time, memory, uint8(threads), uint32(len(expectedHash)))
 
 	return subtle.ConstantTimeCompare(hash, expectedHash) == 1, nil
+}
+
+// ParseExpirationHours parses expiration from form value and returns hours as int
+// Returns default of 24 hours (1 day) if invalid or not provided
+func ParseExpirationHours(expirationStr string) int {
+	if expirationStr == "" {
+		return 24 // Default 1 day
+	}
+
+	hours, err := strconv.Atoi(expirationStr)
+	if err != nil || hours < 1 || hours > 24 {
+		return 24 // Default 1 day if invalid
+	}
+
+	return hours
+}
+
+// CalculateExpirationTime calculates expiration time from current time plus hours
+func CalculateExpirationTime(hours int) string {
+	if hours <= 0 {
+		return "" // No expiration
+	}
+
+	expirationTime := time.Now().Add(time.Duration(hours) * time.Hour)
+	return expirationTime.Format(time.RFC3339)
+}
+
+// IsExpired checks if a file has expired based on its expiration timestamp
+func IsExpired(expiresAtStr string) bool {
+	if expiresAtStr == "" {
+		return false // No expiration set
+	}
+
+	expiresAt, err := time.Parse(time.RFC3339, expiresAtStr)
+	if err != nil {
+		return false // Invalid timestamp, treat as not expired
+	}
+
+	return time.Now().After(expiresAt)
 }

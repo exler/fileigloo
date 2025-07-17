@@ -84,6 +84,16 @@
             margin-bottom: 4px;
         }
 
+        .password-section select {
+            padding: 8px 12px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #1a242f;
+            color: #dbdbdb;
+            margin-bottom: 4px;
+            width: 100%;
+        }
+
         .password-section small {
             color: #999;
             font-size: 12px;
@@ -204,6 +214,17 @@
                         <label for="password">Password (optional):</label>
                         <input type="password" id="password" name="password" placeholder="Leave empty for no password" autocomplete="new-password" />
                         <small>Protect your file with a password. Leave empty if no password is needed.</small>
+                    </div>
+                    <div class="password-section">
+                        <label for="expiration">Expiration:</label>
+                        <select id="expiration" name="expiration">
+                            <option value="1">1 hour</option>
+                            <option value="2">2 hours</option>
+                            <option value="4">4 hours</option>
+                            <option value="12">12 hours</option>
+                            <option value="24" selected>1 day</option>
+                        </select>
+                        <small>File will be automatically deleted after the selected time.</small>
                     </div>
                     <div id="upload-button-container">
                         <button id="file-upload-button" type="submit">Upload</button>

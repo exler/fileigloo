@@ -103,6 +103,29 @@ var (
 					return nil
 				},
 			},
+			{
+				Name:  "cleanup",
+				Usage: "Delete expired files from storage",
+				Flags: flags,
+				Action: func(cCtx *cli.Context) error {
+					s, err := GetStorage(cCtx)
+					if err != nil {
+						return err
+					}
+
+					deletedCount, err := s.DeleteExpired(cCtx.Context)
+					if err != nil {
+						return err
+					}
+
+					if deletedCount == 0 {
+						fmt.Println(colors.Green("No expired files found"))
+					} else {
+						fmt.Println(colors.Blue(fmt.Sprintf("Deleted %d expired files", deletedCount)))
+					}
+					return nil
+				},
+			},
 		},
 	}
 )

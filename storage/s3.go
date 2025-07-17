@@ -129,6 +129,25 @@ func (s *S3Storage) Delete(ctx context.Context, filename string) error {
 	return err
 }
 
+func (s *S3Storage) DeleteExpired(ctx context.Context) (deletedCount int, err error) {
+	filenames, metadata, err := s.List(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	for i, filename := range filenames {
+		if IsMetadataExpired(metadata[i]) {
+			if err := s.Delete(ctx, filename); err != nil {
+				// Log error but continue with other files
+				continue
+			}
+			deletedCount++
+		}
+	}
+
+	return deletedCount, nil
+}
+
 func (s *S3Storage) FileNotExists(err error) bool {
 	if err == nil {
 		return false
