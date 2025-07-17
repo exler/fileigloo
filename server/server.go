@@ -127,6 +127,7 @@ func (s *Server) Run() {
 
 	s.router.Handle("/static/*", fs)
 	s.router.Get("/{action:(?:view|download)}/{fileId}", s.downloadHandler)
+	s.router.Post("/{action:(?:view|download)}/{fileId}", s.downloadHandler)
 
 	s.protectedRouter = chi.NewRouter()
 	s.protectedRouter.Use(middleware.Logger)

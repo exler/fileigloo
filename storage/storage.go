@@ -9,6 +9,7 @@ type Metadata struct {
 	Filename      string // Original filename
 	ContentType   string
 	ContentLength string
+	PasswordHash  string // Argon2id hash of password (empty if no password)
 }
 
 func MetadataToStringMap(metadata Metadata) map[string]*string {
@@ -17,6 +18,7 @@ func MetadataToStringMap(metadata Metadata) map[string]*string {
 	m["Filename"] = &metadata.Filename
 	m["Content-Type"] = &metadata.ContentType
 	m["Content-Length"] = &metadata.ContentLength
+	m["Password-Hash"] = &metadata.PasswordHash
 
 	return m
 }
@@ -26,6 +28,7 @@ func StringMapToMetadata(m map[string]*string) Metadata {
 		Filename:      *m["Filename"],
 		ContentType:   *m["Content-Type"],
 		ContentLength: *m["Content-Length"],
+		PasswordHash:  *m["Password-Hash"],
 	}
 
 	return metadata

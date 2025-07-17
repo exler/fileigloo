@@ -194,6 +194,10 @@ curl -c cookies.txt -X POST \
             </div>
 
             <div class="parameter">
+                <span class="parameter-name">password</span> <span class="parameter-type">(form field, optional)</span> - Password to protect the file
+            </div>
+
+            <div class="parameter">
                 <span class="parameter-name">Accept</span> <span class="parameter-type">(header, optional)</span> - Set to "application/json" for JSON response
             </div>
 
@@ -203,6 +207,16 @@ curl -c cookies.txt -X POST \
 curl -X POST \
   -H "Accept: application/json" \
   -F "file=@/path/to/your/file.txt" \
+  {{.baseURL}}/</pre>
+            </div>
+
+            <h3>Example: Upload a password-protected file</h3>
+            <div class="code-block">
+                <pre># Upload a file with password protection
+curl -X POST \
+  -H "Accept: application/json" \
+  -F "file=@/path/to/your/file.txt" \
+  -F "password=your_secret_password" \
   {{.baseURL}}/</pre>
             </div>
 
@@ -242,6 +256,10 @@ curl -b cookies.txt -X POST \
             </div>
 
             <div class="parameter">
+                <span class="parameter-name">password</span> <span class="parameter-type">(form field, optional)</span> - Password to protect the paste
+            </div>
+
+            <div class="parameter">
                 <span class="parameter-name">Accept</span> <span class="parameter-type">(header, optional)</span> - Set to "application/json" for JSON response
             </div>
 
@@ -251,6 +269,16 @@ curl -b cookies.txt -X POST \
 curl -X POST \
   -H "Accept: application/json" \
   -d "text=Hello, World!" \
+  {{.baseURL}}/</pre>
+            </div>
+
+            <h3>Example: Create a password-protected paste</h3>
+            <div class="code-block">
+                <pre># Create a password-protected text paste
+curl -X POST \
+  -H "Accept: application/json" \
+  -d "text=Secret message" \
+  -d "password=your_secret_password" \
   {{.baseURL}}/</pre>
             </div>
 
@@ -282,7 +310,7 @@ curl -X POST \
 
             <div class="code-block">
                 <pre># Download a file
-curl -O {{.baseURL}}/abc123def456</pre>
+curl -O {{.baseURL}}/download/abc123def456</pre>
             </div>
 
             <h3>View file inline (for supported types)</h3>
@@ -296,18 +324,99 @@ curl {{.baseURL}}/view/abc123def456</pre>
             </div>
         </div>
 
+        <div class="api-section">
+            <h2>Password-Protected Files</h2>
+            <p>Files can be protected with passwords using Argon2id hashing. When accessing password-protected files, you'll need to provide the password via a POST request.</p>
+            
+            <h3>Access password-protected file</h3>
+            <div class="endpoint">
+                <span class="method post">POST</span> /download/{fileId}
+            </div>
+            <div class="endpoint">
+                <span class="method post">POST</span> /view/{fileId}
+            </div>
+
+            <div class="parameter">
+                <span class="parameter-name">password</span> <span class="parameter-type">(form field, required)</span> - The password for the protected file
+            </div>
+
+            <h3>Example: Access a password-protected file</h3>
+            <div class="code-block">
+                <pre># First, try to access the file (will return password form if protected)
+curl {{.baseURL}}/view/abc123def456
+
+# If password-protected, provide password via POST
+curl -X POST \
+  -d "password=your_secret_password" \
+  {{.baseURL}}/view/abc123def456</pre>
+            </div>
+
+            <h3>Example: Download password-protected file</h3>
+            <div class="code-block">
+                <pre># Download a password-protected file
+curl -X POST \
+  -d "password=your_secret_password" \
+  -o downloaded_file.txt \
+  {{.baseURL}}/download/abc123def456</pre>
+            </div>
+
+            <div class="response-example">
+                <h4>Password Form Response (when accessing protected file via GET):</h4>
+                <pre>HTTP/1.1 200 OK
+Content-Type: text/html
+
+&lt;!-- HTML password form will be returned --&gt;</pre>
+            </div>
+
+            <div class="response-example">
+                <h4>Incorrect Password Response:</h4>
+                <pre>HTTP/1.1 200 OK
+Content-Type: text/html
+
+&lt;!-- HTML password form with error message --&gt;</pre>
+            </div>
+        </div>
+
 
 
         <div class="api-section">
             <h2>Response Codes</h2>
             <ul>
-                <li><strong>200 OK</strong> - File uploaded successfully or file retrieved</li>
+                <li><strong>200 OK</strong> - File uploaded successfully, file retrieved, or password form displayed</li>
                 <li><strong>400 Bad Request</strong> - Invalid request format or missing required fields</li>
-                <li><strong>401 Unauthorized</strong> - Authentication required or failed</li>
+                <li><strong>401 Unauthorized</strong> - Authentication required or failed (for site password)</li>
                 <li><strong>404 Not Found</strong> - File not found</li>
                 <li><strong>413 Request Entity Too Large</strong> - File exceeds maximum upload size</li>
                 <li><strong>500 Internal Server Error</strong> - Server error</li>
             </ul>
+        </div>
+
+        <div class="api-section">
+            <h2>Security Features</h2>
+            <h3>Password Protection</h3>
+            <ul>
+                <li><strong>Argon2id Hashing</strong> - All file passwords are hashed using Argon2id with secure parameters</li>
+                <li><strong>Salt Generation</strong> - Each password uses a unique cryptographically secure random salt</li>
+                <li><strong>No Password Storage</strong> - Only password hashes are stored, never plain text passwords</li>
+                <li><strong>Optional Protection</strong> - Files can be uploaded with or without password protection</li>
+            </ul>
+            
+            <h3>Argon2id Parameters</h3>
+            <div class="parameter">
+                <span class="parameter-name">Memory:</span> 64 KB
+            </div>
+            <div class="parameter">
+                <span class="parameter-name">Iterations:</span> 1
+            </div>
+            <div class="parameter">
+                <span class="parameter-name">Parallelism:</span> 4
+            </div>
+            <div class="parameter">
+                <span class="parameter-name">Key Length:</span> 32 bytes
+            </div>
+            <div class="parameter">
+                <span class="parameter-name">Salt Length:</span> 16 bytes
+            </div>
         </div>
 
         <div class="api-section">

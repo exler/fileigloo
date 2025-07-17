@@ -63,6 +63,32 @@
             align-items: center;
         }
 
+        .password-section {
+            margin: 16px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .password-section label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .password-section input[type="password"] {
+            padding: 8px 12px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #1a242f;
+            color: #dbdbdb;
+            margin-bottom: 4px;
+        }
+
+        .password-section small {
+            color: #999;
+            font-size: 12px;
+        }
+
         @keyframes spinner-inner {
             0% {
                 transform: translate(-50%, -50%) rotate(0deg);
@@ -192,6 +218,11 @@
                         <input id="file-select-input" type="file" name="file" />
                     </div>
                     <div id="file-size-error" class="error-message hidden"></div>
+                    <div class="password-section">
+                        <label for="password">Password (optional):</label>
+                        <input type="password" id="password" name="password" placeholder="Leave empty for no password" autocomplete="new-password" />
+                        <small>Protect your file with a password. Leave empty if no password is needed.</small>
+                    </div>
                     <div id="upload-button-container">
                         <button id="file-upload-button" type="submit">Upload</button>
                         <div id="spinner" class="spinner-outer hidden">

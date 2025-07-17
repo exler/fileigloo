@@ -148,6 +148,9 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get optional password
+	password := r.FormValue("password")
+
 	var fileId string
 	for {
 		fileId = generateFileId()
@@ -156,10 +159,19 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Hash password if provided
+	passwordHash, err := HashPassword(password)
+	if err != nil {
+		s.logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	metadata := storage.Metadata{
 		Filename:      fileName,
 		ContentType:   contentType,
 		ContentLength: strconv.FormatInt(contentLength, 10),
+		PasswordHash:  passwordHash,
 	}
 	if err = s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
 		s.logger.Error(err)
@@ -219,6 +231,9 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get optional password
+	password := r.FormValue("password")
+
 	var fileId string
 	for {
 		fileId = generateFileId()
@@ -227,10 +242,19 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Hash password if provided
+	passwordHash, err := HashPassword(password)
+	if err != nil {
+		s.logger.Error(err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	metadata := storage.Metadata{
 		Filename:      fileName,
 		ContentType:   contentType,
 		ContentLength: strconv.FormatInt(contentLength, 10),
+		PasswordHash:  passwordHash,
 	}
 	if err := s.storage.Put(r.Context(), fileId, file, metadata); err != nil {
 		s.logger.Error(err)
@@ -279,6 +303,35 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer reader.Close()
+
+	// Check if file is password protected
+	if metadata.PasswordHash != "" {
+		// Check if password is provided in form data
+		if r.Method == "POST" {
+			password := r.FormValue("password")
+			valid, err := VerifyPassword(password, metadata.PasswordHash)
+			if err != nil {
+				s.logger.Error(err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			if !valid {
+				renderTemplate(w, "password", map[string]interface{}{
+					"fileId":        fileId,
+					"action":        chi.URLParam(r, "action"),
+					"wrongPassword": true,
+				})
+				return
+			}
+		} else {
+			// Show password form
+			renderTemplate(w, "password", map[string]interface{}{
+				"fileId": fileId,
+				"action": chi.URLParam(r, "action"),
+			})
+			return
+		}
+	}
 
 	var fileDisposition string
 	if chi.URLParam(r, "action") == "view" {
