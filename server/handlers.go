@@ -86,12 +86,21 @@ func (s *Server) loginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) formHandler(w http.ResponseWriter, r *http.Request) {
-	if formType := r.FormValue("form-type"); formType == "file-upload" {
+	// Check if both file and text are provided
+	hasFile := r.FormValue("file") != "" || (r.MultipartForm != nil && len(r.MultipartForm.File["file"]) > 0)
+	hasText := r.FormValue("text") != ""
+
+	if hasFile && hasText {
+		http.Error(w, "Cannot provide both file and text arguments", http.StatusBadRequest)
+		return
+	}
+
+	if hasFile {
 		s.fileUploadHandler(w, r)
-	} else if formType == "pastebin" {
+	} else if hasText {
 		s.pastebinHandler(w, r)
 	} else {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		http.Error(w, "Must provide either file or text argument", http.StatusBadRequest)
 		return
 	}
 }
@@ -170,8 +179,8 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 	var pasteContent string
-	if pasteContent = r.FormValue("paste"); pasteContent == "" {
-		http.Error(w, "Paste is empty", http.StatusBadRequest)
+	if pasteContent = r.FormValue("text"); pasteContent == "" {
+		http.Error(w, "Text is empty", http.StatusBadRequest)
 		return
 	}
 

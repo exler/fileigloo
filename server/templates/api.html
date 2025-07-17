@@ -190,9 +190,6 @@ curl -c cookies.txt -X POST \
             </div>
             
             <div class="parameter">
-                <span class="parameter-name">form-type</span> <span class="parameter-type">(form field, required)</span> - Must be "file-upload"
-            </div>
-            <div class="parameter">
                 <span class="parameter-name">file</span> <span class="parameter-type">(file field, required)</span> - The file to upload
             </div>
 
@@ -200,7 +197,6 @@ curl -c cookies.txt -X POST \
             <div class="code-block">
                 <pre># Upload a file (public instance)
 curl -X POST \
-  -F "form-type=file-upload" \
   -F "file=@/path/to/your/file.txt" \
   {{.baseURL}}/</pre>
             </div>
@@ -214,7 +210,6 @@ curl -c cookies.txt -X POST \
 
 # Then upload using the saved cookies
 curl -b cookies.txt -X POST \
-  -F "form-type=file-upload" \
   -F "file=@/path/to/your/file.txt" \
   {{.baseURL}}/</pre>
             </div>
@@ -223,7 +218,6 @@ curl -b cookies.txt -X POST \
             <div class="code-block">
                 <pre># Upload and extract the file URL using grep
 curl -b cookies.txt -X POST \
-  -F "form-type=file-upload" \
   -F "file=@/path/to/your/file.txt" \
   {{.baseURL}}/ \
   | grep -o 'href="[^"]*"' \
@@ -242,18 +236,14 @@ curl -b cookies.txt -X POST \
             </div>
             
             <div class="parameter">
-                <span class="parameter-name">form-type</span> <span class="parameter-type">(form field, required)</span> - Must be "pastebin"
-            </div>
-            <div class="parameter">
-                <span class="parameter-name">paste</span> <span class="parameter-type">(form field, required)</span> - The text content to paste
+                <span class="parameter-name">text</span> <span class="parameter-type">(form field, required)</span> - The text content to paste
             </div>
 
             <h3>Example: Create a paste</h3>
             <div class="code-block">
                 <pre># Create a text paste
 curl -X POST \
-  -d "form-type=pastebin" \
-  -d "paste=Hello, World! This is my paste content." \
+  -d "text=Hello, World! This is my paste content." \
   {{.baseURL}}/</pre>
             </div>
 
@@ -261,8 +251,7 @@ curl -X POST \
             <div class="code-block">
                 <pre># Create a paste from file content
 curl -X POST \
-  -d "form-type=pastebin" \
-  --data-urlencode "paste@/path/to/your/file.txt" \
+  --data-urlencode "text@/path/to/your/file.txt" \
   {{.baseURL}}/</pre>
             </div>
         </div>
