@@ -7,6 +7,13 @@
     </p>
 </p>
 
+## Features
+
+- **File sharing**: Upload and share files.
+- **Pastebin**: Upload and share text snippets.
+- **File expiration**: Set expiration dates for shared files.
+- **Password protection**: Secure your files or the whole app instance with a password.
+
 ## Requirements
 
 * Go >= 1.24
