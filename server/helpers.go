@@ -124,7 +124,8 @@ func VerifyPassword(password, hashedPassword string) (bool, error) {
 		return false, errors.New("invalid parameters format")
 	}
 
-	var memory, time, threads uint32
+	var memory, time uint32
+	var threads uint8
 	if _, err := fmt.Sscanf(params[0], "m=%d", &memory); err != nil {
 		return false, err
 	}
@@ -145,7 +146,9 @@ func VerifyPassword(password, hashedPassword string) (bool, error) {
 		return false, err
 	}
 
-	hash := argon2.IDKey([]byte(password), salt, time, memory, uint8(threads), uint32(len(expectedHash)))
+	keyLength := uint32(len(expectedHash)) // #nosec G115
+
+	hash := argon2.IDKey([]byte(password), salt, time, memory, threads, keyLength)
 
 	return subtle.ConstantTimeCompare(hash, expectedHash) == 1, nil
 }
