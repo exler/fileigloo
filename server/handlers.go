@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -17,6 +18,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type FileUploadResponse struct {
+	FileId  string `json:"fileId"`
+	FileUrl string `json:"fileUrl"`
+}
 
 func generateFileId() string {
 	return random.String(12)
@@ -170,6 +176,23 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
+	// Check if client wants JSON response
+	acceptHeader := r.Header.Get("Accept")
+	if strings.Contains(acceptHeader, "application/json") {
+		response := FileUploadResponse{
+			FileId:  fileId,
+			FileUrl: fileUrl.String(),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			s.logger.Error(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
 	renderTemplate(w, "file", map[string]interface{}{
 		"fileUrl":       fileUrl,
 		"maxUploadSize": s.maxUploadSize,
@@ -218,6 +241,23 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 	fileUrl := BuildURL(r, "view", fileId)
 
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
+
+	// Check if client wants JSON response
+	acceptHeader := r.Header.Get("Accept")
+	if strings.Contains(acceptHeader, "application/json") {
+		response := FileUploadResponse{
+			FileId:  fileId,
+			FileUrl: fileUrl.String(),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			s.logger.Error(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
 
 	renderTemplate(w, "paste", map[string]interface{}{
 		"fileUrl":       fileUrl,

@@ -193,12 +193,25 @@ curl -c cookies.txt -X POST \
                 <span class="parameter-name">file</span> <span class="parameter-type">(file field, required)</span> - The file to upload
             </div>
 
+            <div class="parameter">
+                <span class="parameter-name">Accept</span> <span class="parameter-type">(header, optional)</span> - Set to "application/json" for JSON response
+            </div>
+
             <h3>Example: Upload a file</h3>
             <div class="code-block">
-                <pre># Upload a file (public instance)
+                <pre># Upload a file and get a JSON response
 curl -X POST \
+  -H "Accept: application/json" \
   -F "file=@/path/to/your/file.txt" \
   {{.baseURL}}/</pre>
+            </div>
+
+            <div class="response-example">
+                <h4>JSON Response:</h4>
+                <pre>{
+  "fileId": "abc123def456",
+  "fileUrl": "{{.baseURL}}/view/abc123def456"
+}</pre>
             </div>
 
             <h3>Example: Upload a file (password-protected instance)</h3>
@@ -210,20 +223,9 @@ curl -c cookies.txt -X POST \
 
 # Then upload using the saved cookies
 curl -b cookies.txt -X POST \
+  -H "Accept: application/json" \
   -F "file=@/path/to/your/file.txt" \
   {{.baseURL}}/</pre>
-            </div>
-
-            <h3>Extract file URL from response</h3>
-            <div class="code-block">
-                <pre># Upload and extract the file URL using grep
-curl -b cookies.txt -X POST \
-  -F "file=@/path/to/your/file.txt" \
-  {{.baseURL}}/ \
-  | grep -o 'href="[^"]*"' \
-  | grep -v static \
-  | head -1 \
-  | sed 's/href="//;s/"//'</pre>
             </div>
         </div>
 
@@ -239,12 +241,25 @@ curl -b cookies.txt -X POST \
                 <span class="parameter-name">text</span> <span class="parameter-type">(form field, required)</span> - The text content to paste
             </div>
 
+            <div class="parameter">
+                <span class="parameter-name">Accept</span> <span class="parameter-type">(header, optional)</span> - Set to "application/json" for JSON response
+            </div>
+
             <h3>Example: Create a paste</h3>
             <div class="code-block">
-                <pre># Create a text paste
+                <pre># Create a text paste and get a JSON response
 curl -X POST \
-  -d "text=Hello, World! This is my paste content." \
+  -H "Accept: application/json" \
+  -d "text=Hello, World!" \
   {{.baseURL}}/</pre>
+            </div>
+
+            <div class="response-example">
+                <h4>JSON Response:</h4>
+                <pre>{
+  "fileId": "def456ghi789",
+  "fileUrl": "{{.baseURL}}/view/def456ghi789"
+}</pre>
             </div>
 
             <h3>Example: Create a paste from file content</h3>
@@ -297,7 +312,7 @@ curl {{.baseURL}}/view/abc123def456</pre>
 
         <div class="api-section">
             <h2>Rate Limiting</h2>
-            <p>Fileigloo implements rate limiting per IP address. The default limit is configurable by the server administrator. If you exceed the rate limit, you'll receive a <strong>429 Too Many Requests</strong> response.</p>
+            <p>Fileigloo implements rate limiting per IP address. If you exceed the rate limit, you'll receive a <strong>429 Too Many Requests</strong> response.</p>
         </div>
 
         <footer>
