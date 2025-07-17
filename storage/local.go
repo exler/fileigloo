@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/exler/fileigloo/datetime"
 )
 
 type LocalStorage struct {
@@ -146,7 +148,7 @@ func (s *LocalStorage) DeleteExpired(ctx context.Context) (deletedCount int, err
 	}
 
 	for i, filename := range filenames {
-		if IsMetadataExpired(metadata[i]) {
+		if datetime.IsExpired(metadata[i].ExpiresAt) {
 			if err := s.Delete(ctx, filename); err != nil {
 				// Log error but continue with other files
 				continue

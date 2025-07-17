@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/exler/fileigloo/datetime"
 	"github.com/exler/fileigloo/random"
 	"github.com/exler/fileigloo/storage"
 	"github.com/go-chi/chi/v5"
@@ -315,7 +316,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	defer reader.Close()
 
 	// Check if file has expired
-	if IsExpired(metadata.ExpiresAt) {
+	if datetime.IsExpired(metadata.ExpiresAt) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}

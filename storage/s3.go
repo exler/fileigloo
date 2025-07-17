@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/exler/fileigloo/datetime"
 )
 
 type S3Storage struct {
@@ -136,7 +137,7 @@ func (s *S3Storage) DeleteExpired(ctx context.Context) (deletedCount int, err er
 	}
 
 	for i, filename := range filenames {
-		if IsMetadataExpired(metadata[i]) {
+		if datetime.IsExpired(metadata[i].ExpiresAt) {
 			if err := s.Delete(ctx, filename); err != nil {
 				// Log error but continue with other files
 				continue

@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"io"
-	"time"
 )
 
 type Metadata struct {
@@ -40,20 +39,6 @@ func StringMapToMetadata(m map[string]*string) Metadata {
 	}
 
 	return metadata
-}
-
-// IsMetadataExpired checks if metadata has expired
-func IsMetadataExpired(metadata Metadata) bool {
-	if metadata.ExpiresAt == "" {
-		return false // No expiration set
-	}
-
-	expiresAt, err := time.Parse(time.RFC3339, metadata.ExpiresAt)
-	if err != nil {
-		return false // Invalid timestamp, treat as not expired
-	}
-
-	return time.Now().After(expiresAt)
 }
 
 type Storage interface {
