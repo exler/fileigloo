@@ -195,9 +195,6 @@ curl -c cookies.txt -X POST \
             <div class="parameter">
                 <span class="parameter-name">file</span> <span class="parameter-type">(file field, required)</span> - The file to upload
             </div>
-            <div class="parameter">
-                <span class="parameter-name">defender</span> <span class="parameter-type">(form field, optional)</span> - Leave empty (spam protection)
-            </div>
 
             <h3>Example: Upload a file</h3>
             <div class="code-block">
@@ -205,7 +202,6 @@ curl -c cookies.txt -X POST \
 curl -X POST \
   -F "form-type=file-upload" \
   -F "file=@/path/to/your/file.txt" \
-  -F "defender=" \
   {{.baseURL}}/</pre>
             </div>
 
@@ -220,7 +216,6 @@ curl -c cookies.txt -X POST \
 curl -b cookies.txt -X POST \
   -F "form-type=file-upload" \
   -F "file=@/path/to/your/file.txt" \
-  -F "defender=" \
   {{.baseURL}}/</pre>
             </div>
 
@@ -230,7 +225,6 @@ curl -b cookies.txt -X POST \
 curl -b cookies.txt -X POST \
   -F "form-type=file-upload" \
   -F "file=@/path/to/your/file.txt" \
-  -F "defender=" \
   {{.baseURL}}/ \
   | grep -o 'href="[^"]*"' \
   | grep -v static \
@@ -253,9 +247,6 @@ curl -b cookies.txt -X POST \
             <div class="parameter">
                 <span class="parameter-name">paste</span> <span class="parameter-type">(form field, required)</span> - The text content to paste
             </div>
-            <div class="parameter">
-                <span class="parameter-name">defender</span> <span class="parameter-type">(form field, optional)</span> - Leave empty (spam protection)
-            </div>
 
             <h3>Example: Create a paste</h3>
             <div class="code-block">
@@ -263,7 +254,6 @@ curl -b cookies.txt -X POST \
 curl -X POST \
   -d "form-type=pastebin" \
   -d "paste=Hello, World! This is my paste content." \
-  -d "defender=" \
   {{.baseURL}}/</pre>
             </div>
 
@@ -273,7 +263,6 @@ curl -X POST \
 curl -X POST \
   -d "form-type=pastebin" \
   --data-urlencode "paste@/path/to/your/file.txt" \
-  -d "defender=" \
   {{.baseURL}}/</pre>
             </div>
         </div>
@@ -313,7 +302,6 @@ curl {{.baseURL}}/view/abc123def456</pre>
                 <li><strong>401 Unauthorized</strong> - Authentication required or failed</li>
                 <li><strong>404 Not Found</strong> - File not found</li>
                 <li><strong>413 Request Entity Too Large</strong> - File exceeds maximum upload size</li>
-                <li><strong>418 I'm a teapot</strong> - Spam protection triggered (defender field not empty)</li>
                 <li><strong>500 Internal Server Error</strong> - Server error</li>
             </ul>
         </div>

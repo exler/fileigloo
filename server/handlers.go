@@ -86,11 +86,6 @@ func (s *Server) loginPOSTHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) formHandler(w http.ResponseWriter, r *http.Request) {
-	if formDefender := r.FormValue("defender"); formDefender != "" {
-		http.Error(w, http.StatusText(http.StatusTeapot), http.StatusTeapot)
-		return
-	}
-
 	if formType := r.FormValue("form-type"); formType == "file-upload" {
 		s.fileUploadHandler(w, r)
 	} else if formType == "pastebin" {
