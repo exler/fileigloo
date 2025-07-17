@@ -126,8 +126,7 @@ func (s *Server) Run() {
 	s.router.Use(sentryMiddleware.Handle)
 
 	s.router.Handle("/static/*", fs)
-	s.router.Get("/{view:(?:view)}/{fileId}", s.downloadHandler)
-	s.router.Get("/{fileId}", s.downloadHandler)
+	s.router.Get("/{action:(?:view|download)}/{fileId}", s.downloadHandler)
 
 	s.protectedRouter = chi.NewRouter()
 	s.protectedRouter.Use(middleware.Logger)
@@ -143,6 +142,9 @@ func (s *Server) Run() {
 	s.protectedRouter.Use(sentryMiddleware.Handle)
 
 	s.protectedRouter.Get("/", s.indexHandler)
+	s.protectedRouter.Get("/file", s.fileHandler)
+	s.protectedRouter.Get("/paste", s.pasteHandler)
+	s.protectedRouter.Get("/api", s.apiHandler)
 	s.protectedRouter.Post("/", s.formHandler)
 
 	s.router.Mount("/", s.protectedRouter)

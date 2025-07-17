@@ -23,8 +23,39 @@ func generateFileId() string {
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "index", map[string]interface{}{
+	http.Redirect(w, r, "/file", http.StatusTemporaryRedirect)
+}
+
+func (s *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "file", map[string]interface{}{
 		"maxUploadSize": s.maxUploadSize,
+		"currentPage":   "file",
+	})
+}
+
+func (s *Server) pasteHandler(w http.ResponseWriter, r *http.Request) {
+	renderTemplate(w, "paste", map[string]interface{}{
+		"maxUploadSize": s.maxUploadSize,
+		"currentPage":   "paste",
+	})
+}
+
+func (s *Server) apiHandler(w http.ResponseWriter, r *http.Request) {
+	// Build the base URL using the same logic as BuildURL but without path fragments
+	var scheme string
+	if r.TLS != nil {
+		scheme = "https"
+	} else if headerScheme := r.Header.Get("X-Forwarded-Proto"); headerScheme != "" {
+		scheme = headerScheme
+	} else {
+		scheme = "http"
+	}
+
+	baseURL := scheme + "://" + r.Host
+
+	renderTemplate(w, "api", map[string]interface{}{
+		"currentPage": "api",
+		"baseURL":     baseURL,
 	})
 }
 
@@ -130,14 +161,15 @@ func (s *Server) fileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	if ShowInline(contentType) {
 		fileUrl = BuildURL(r, "view", fileId)
 	} else {
-		fileUrl = BuildURL(r, fileId)
+		fileUrl = BuildURL(r, "download", fileId)
 	}
 
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
-	renderTemplate(w, "index", map[string]interface{}{
+	renderTemplate(w, "file", map[string]interface{}{
 		"fileUrl":       fileUrl,
 		"maxUploadSize": s.maxUploadSize,
+		"currentPage":   "file",
 	})
 }
 
@@ -183,9 +215,10 @@ func (s *Server) pastebinHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.logger.Info(fmt.Sprintf("New file uploaded [url=%s]", fileUrl))
 
-	renderTemplate(w, "index", map[string]interface{}{
+	renderTemplate(w, "paste", map[string]interface{}{
 		"fileUrl":       fileUrl,
 		"maxUploadSize": s.maxUploadSize,
+		"currentPage":   "paste",
 	})
 }
 
@@ -204,7 +237,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	defer reader.Close()
 
 	var fileDisposition string
-	if chi.URLParam(r, "view") != "" {
+	if chi.URLParam(r, "action") == "view" {
 		fileDisposition = "inline"
 		if strings.HasPrefix(metadata.ContentType, "text/") {
 			metadata.ContentType = "text/plain"

@@ -1,0 +1,22 @@
+{{define "navigation"}}
+<nav style="margin: 1rem 0 2rem 0;">
+    <ul style="display: flex; justify-content: center; list-style: none; padding: 0; margin: 0; gap: 2rem;">
+        <li>
+            <a href="/file" style="color: {{if eq .currentPage "file"}}#4ea7ff{{else}}#dbdbdb{{end}}; text-decoration: none; font-weight: {{if eq .currentPage "file"}}bold{{else}}normal{{end}}; padding: 0.5rem 1rem; border-radius: 6px; background: {{if eq .currentPage "file"}}#161f27{{else}}transparent{{end}}; transition: all 0.2s ease-in-out;">File</a>
+        </li>
+        <li>
+            <a href="/paste" style="color: {{if eq .currentPage "paste"}}#4ea7ff{{else}}#dbdbdb{{end}}; text-decoration: none; font-weight: {{if eq .currentPage "paste"}}bold{{else}}normal{{end}}; padding: 0.5rem 1rem; border-radius: 6px; background: {{if eq .currentPage "paste"}}#161f27{{else}}transparent{{end}}; transition: all 0.2s ease-in-out;">Paste</a>
+        </li>
+        <li>
+            <a href="/api" style="color: {{if eq .currentPage "api"}}#4ea7ff{{else}}#dbdbdb{{end}}; text-decoration: none; font-weight: {{if eq .currentPage "api"}}bold{{else}}normal{{end}}; padding: 0.5rem 1rem; border-radius: 6px; background: {{if eq .currentPage "api"}}#161f27{{else}}transparent{{end}}; transition: all 0.2s ease-in-out;">API</a>
+        </li>
+    </ul>
+</nav>
+
+<style>
+nav a:hover {
+    background: #324759 !important;
+    color: #4ea7ff !important;
+}
+</style>
+{{end}}

@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Small and simple online file sharing & pastebin" />
-    <title>Fileigloo</title>
+    <title>File Upload - Fileigloo</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net" />
     <link rel="stylesheet" href="https://fonts.bunny.net/css?family=cantarell:400" />
@@ -56,10 +56,6 @@
             -moz-transition: all 0.2s ease-in-out;
             -webkit-transition: all 0.2s ease-in-out;
             -o-transition: all 0.2s ease-in-out;
-        }
-
-        #pastebin-input {
-            font-family: monospace;
         }
 
         #upload-button-container {
@@ -166,6 +162,8 @@
             </a>
         </center>
 
+        {{template "navigation" .}}
+
         {{ if .fileUrl }}
         <div id="result">
             <fieldset>
@@ -204,18 +202,6 @@
                             </div>
                         </div>
                     </div>
-                </fieldset>
-            </section>
-        </form>
-
-        <form id="form-pastebin" method="POST" action="/">
-            <section id="pastebin">
-                <fieldset>
-                    <legend>Pastebin</legend>
-                    <textarea id="pastebin-input" autocomplete="off" rows="18" name="paste"></textarea>
-                    <input id="pastebin-defender" type="hidden" name="defender" />
-                    <input id="pastebin-form-type" type="hidden" name="form-type" value="pastebin" />
-                    <button id="pastebin-button" type="submit">Create</button>
                 </fieldset>
             </section>
         </form>
@@ -272,7 +258,6 @@
             }
 
             let formUpload = document.getElementById("form-upload");
-            let formPastebin = document.getElementById("form-pastebin");
 
             function hideResult() {
                 let result = document.getElementById("result");
@@ -298,25 +283,6 @@
                 }
                 hideResult();
                 showSpinner();
-            });
-            
-            formPastebin.addEventListener("submit", hideResult);
-            formPastebin.addEventListener("submit", showSpinner);
-
-            // Handle tab key inside the pastebin textarea
-            let pastebinInput = document.getElementById("pastebin-input");
-            pastebinInput.addEventListener("keydown", function(e) {
-                if (e.key === "Tab") {
-                    e.preventDefault();
-                    let start = this.selectionStart;
-                    let end = this.selectionEnd;
-
-                    // Set textarea value to: text before caret + tab + text after caret
-                    this.value = this.value.substring(0, start) + "\t" + this.value.substring(end);
-
-                    // Put caret at right position again
-                    this.selectionStart = this.selectionEnd = start + 1;
-                }
             });
 
             {{ if .fileUrl }}
