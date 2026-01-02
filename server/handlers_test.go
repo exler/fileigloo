@@ -2,22 +2,61 @@ package server_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/exler/fileigloo/server"
-	"github.com/go-chi/chi/v5"
+	"github.com/exler/fileigloo/storage"
 )
+
+func setupTestServer(t *testing.T, maxUploadSizeMB ...int64) (*httptest.Server, *storage.LocalStorage) {
+	t.Helper()
+
+	// Default max upload size is 10MB
+	maxUploadSize := int64(10)
+	if len(maxUploadSizeMB) > 0 {
+		maxUploadSize = maxUploadSizeMB[0]
+	}
+
+	// Create temporary directory for test storage
+	tmpDir, err := os.MkdirTemp("", "fileigloo-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	t.Cleanup(func() { os.RemoveAll(tmpDir) })
+
+	// Create local storage
+	localStorage, err := storage.NewLocalStorage(tmpDir)
+	if err != nil {
+		t.Fatalf("Failed to create local storage: %v", err)
+	}
+
+	// Create server instance
+	srv := server.New(
+		server.UseStorage(localStorage),
+		server.MaxUploadSize(maxUploadSize),
+		server.MaxRequests(100),
+		server.Port(0), // Use random port
+	)
+
+	// Create test server
+	testServer := httptest.NewServer(srv.GetRouter())
+	t.Cleanup(testServer.Close)
+
+	return testServer, localStorage
+}
 
 func TestFileUploadHandler(t *testing.T) {
 	t.Run("upload file with JSON response", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
+
 		// Create a test file
 		fileContent := "Hello, World!"
 
@@ -42,83 +81,88 @@ func TestFileUploadHandler(t *testing.T) {
 
 		writer.Close()
 
-		// Create request
-		req := httptest.NewRequest("POST", "/", &buf)
+		// Make request to server
+		req, err := http.NewRequest("POST", ts.URL+"/", &buf)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 		req.Header.Set("Accept", "application/json")
 
-		// We'll need to create a mock handler for testing
-		// Since we can't easily instantiate the full server, let's test the logic
-
-		// For now, let's test the multipart parsing logic
-		err = req.ParseMultipartForm(32 << 20)
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			t.Fatalf("Failed to parse multipart form: %v", err)
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", resp.StatusCode)
 		}
 
-		// Verify form fields
-		if req.FormValue("password") != "test123" {
-			t.Errorf("Expected password 'test123', got '%s'", req.FormValue("password"))
+		// Verify JSON response
+		var uploadResp server.FileUploadResponse
+		if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+			t.Fatalf("Failed to decode JSON response: %v", err)
 		}
 
-		if req.FormValue("expiration") != "24" {
-			t.Errorf("Expected expiration '24', got '%s'", req.FormValue("expiration"))
+		if uploadResp.FileId == "" {
+			t.Error("Expected non-empty FileId")
 		}
 
-		// Verify file upload
-		file, header, err := req.FormFile("file")
-		if err != nil {
-			t.Fatalf("Failed to get form file: %v", err)
-		}
-		defer file.Close()
-
-		if header.Filename != "test.txt" {
-			t.Errorf("Expected filename 'test.txt', got '%s'", header.Filename)
+		if uploadResp.FileUrl == "" {
+			t.Error("Expected non-empty FileUrl")
 		}
 
-		content, err := io.ReadAll(file)
-		if err != nil {
-			t.Fatalf("Failed to read file content: %v", err)
-		}
-
-		if string(content) != fileContent {
-			t.Errorf("Expected file content '%s', got '%s'", fileContent, string(content))
+		if !strings.Contains(uploadResp.FileUrl, uploadResp.FileId) {
+			t.Errorf("Expected FileUrl to contain FileId, got %s", uploadResp.FileUrl)
 		}
 	})
 
 	t.Run("upload text with JSON response", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
+
 		// Create form data
 		formData := url.Values{}
 		formData.Set("text", "Hello, World!")
 		formData.Set("password", "test123")
 		formData.Set("expiration", "12")
 
-		// Create request
-		req := httptest.NewRequest("POST", "/", strings.NewReader(formData.Encode()))
+		// Make request to server
+		req, err := http.NewRequest("POST", ts.URL+"/", strings.NewReader(formData.Encode()))
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Set("Accept", "application/json")
 
-		// Parse form
-		err := req.ParseForm()
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			t.Fatalf("Failed to parse form: %v", err)
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", resp.StatusCode)
 		}
 
-		// Verify form values
-		if req.FormValue("text") != "Hello, World!" {
-			t.Errorf("Expected text 'Hello, World!', got '%s'", req.FormValue("text"))
+		// Verify JSON response
+		var uploadResp server.FileUploadResponse
+		if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+			t.Fatalf("Failed to decode JSON response: %v", err)
 		}
 
-		if req.FormValue("password") != "test123" {
-			t.Errorf("Expected password 'test123', got '%s'", req.FormValue("password"))
+		if uploadResp.FileId == "" {
+			t.Error("Expected non-empty FileId")
 		}
 
-		if req.FormValue("expiration") != "12" {
-			t.Errorf("Expected expiration '12', got '%s'", req.FormValue("expiration"))
+		if uploadResp.FileUrl == "" {
+			t.Error("Expected non-empty FileUrl")
 		}
 	})
 
 	t.Run("reject both file and text", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
+
 		// Create multipart form with both file and text
 		var buf bytes.Buffer
 		writer := multipart.NewWriter(&buf)
@@ -135,361 +179,482 @@ func TestFileUploadHandler(t *testing.T) {
 
 		writer.Close()
 
-		// Create request
-		req := httptest.NewRequest("POST", "/", &buf)
+		// Make request to server
+		req, err := http.NewRequest("POST", ts.URL+"/", &buf)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
-		// Parse form
-		err = req.ParseMultipartForm(32 << 20)
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			t.Fatalf("Failed to parse multipart form: %v", err)
+			t.Fatalf("Failed to make request: %v", err)
 		}
+		defer resp.Body.Close()
 
-		// Check if both file and text are present
-		hasFile := req.FormValue("file") != "" || (req.MultipartForm != nil && len(req.MultipartForm.File["file"]) > 0)
-		hasText := req.FormValue("text") != ""
-
-		if hasFile && hasText {
-			// This should trigger an error in the actual handler
-			t.Log("Correctly detected both file and text - this should be rejected")
-		} else {
-			t.Error("Should have detected both file and text")
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", resp.StatusCode)
 		}
 	})
-}
 
-func TestJSONAPIResponse(t *testing.T) {
-	t.Run("file upload response format", func(t *testing.T) {
-		response := server.FileUploadResponse{
-			FileId:  "test123",
-			FileUrl: "https://example.com/view/test123",
-		}
+	t.Run("reject missing file and text", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
 
-		// Test JSON marshaling
-		jsonData, err := json.Marshal(response)
+		// Create empty form
+		var buf bytes.Buffer
+		writer := multipart.NewWriter(&buf)
+		writer.Close()
+
+		// Make request to server
+		req, err := http.NewRequest("POST", ts.URL+"/", &buf)
 		if err != nil {
-			t.Fatalf("Failed to marshal JSON response: %v", err)
+			t.Fatalf("Failed to create request: %v", err)
 		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
 
-		// Test JSON unmarshaling
-		var parsed server.FileUploadResponse
-		err = json.Unmarshal(jsonData, &parsed)
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			t.Fatalf("Failed to unmarshal JSON response: %v", err)
+			t.Fatalf("Failed to make request: %v", err)
 		}
+		defer resp.Body.Close()
 
-		// Verify fields
-		if parsed.FileId != response.FileId {
-			t.Errorf("Expected FileId '%s', got '%s'", response.FileId, parsed.FileId)
-		}
-
-		if parsed.FileUrl != response.FileUrl {
-			t.Errorf("Expected FileUrl '%s', got '%s'", response.FileUrl, parsed.FileUrl)
-		}
-	})
-}
-
-func TestAPIRequestValidation(t *testing.T) {
-	t.Run("content type validation", func(t *testing.T) {
-		tests := []struct {
-			name        string
-			contentType string
-			expectValid bool
-		}{
-			{
-				name:        "valid multipart form",
-				contentType: "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW",
-				expectValid: true,
-			},
-			{
-				name:        "invalid content type",
-				contentType: "application/json",
-				expectValid: false,
-			},
-			{
-				name:        "missing content type",
-				contentType: "",
-				expectValid: false,
-			},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				req := httptest.NewRequest("POST", "/", nil)
-				if tt.contentType != "" {
-					req.Header.Set("Content-Type", tt.contentType)
-				}
-
-				// Test content type validation logic
-				contentType := req.Header.Get("Content-Type")
-				isValid := strings.HasPrefix(contentType, "multipart/form-data")
-
-				if isValid != tt.expectValid {
-					t.Errorf("Expected content type validation to be %v, got %v", tt.expectValid, isValid)
-				}
-			})
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("Expected status 400, got %d", resp.StatusCode)
 		}
 	})
 
-	t.Run("accept header validation", func(t *testing.T) {
-		tests := []struct {
-			name         string
-			acceptHeader string
-			expectJSON   bool
-		}{
-			{
-				name:         "json accept header",
-				acceptHeader: "application/json",
-				expectJSON:   true,
-			},
-			{
-				name:         "json with other types",
-				acceptHeader: "text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7",
-				expectJSON:   true,
-			},
-			{
-				name:         "html accept header",
-				acceptHeader: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-				expectJSON:   false,
-			},
-			{
-				name:         "empty accept header",
-				acceptHeader: "",
-				expectJSON:   false,
-			},
+	t.Run("file too large", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
+
+		// Create a file larger than max upload size (10MB in setup)
+		largeContent := make([]byte, 11*1024*1024) // 11MB
+
+		var buf bytes.Buffer
+		writer := multipart.NewWriter(&buf)
+
+		fileField, err := writer.CreateFormFile("file", "large.bin")
+		if err != nil {
+			t.Fatalf("Failed to create form file: %v", err)
 		}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				req := httptest.NewRequest("POST", "/", nil)
-				if tt.acceptHeader != "" {
-					req.Header.Set("Accept", tt.acceptHeader)
-				}
-
-				// Test accept header validation logic
-				acceptHeader := req.Header.Get("Accept")
-				wantsJSON := strings.Contains(acceptHeader, "application/json")
-
-				if wantsJSON != tt.expectJSON {
-					t.Errorf("Expected JSON acceptance to be %v, got %v", tt.expectJSON, wantsJSON)
-				}
-			})
-		}
-	})
-}
-
-func TestPasswordProtection(t *testing.T) {
-	t.Run("password hashing and verification", func(t *testing.T) {
-		password := "test123"
-
-		// This would typically use the server's HashPassword function
-		// For testing, we can simulate the bcrypt logic
-		if password == "" {
-			t.Log("Empty password - no hashing required")
-			return
+		_, err = fileField.Write(largeContent)
+		if err != nil {
+			t.Fatalf("Failed to write file content: %v", err)
 		}
 
-		// Simulate password validation
-		providedPassword := "test123"
-		correctPassword := "test123"
+		writer.Close()
 
-		if providedPassword != correctPassword {
-			t.Error("Password validation failed")
+		// Make request to server
+		req, err := http.NewRequest("POST", ts.URL+"/", &buf)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
 		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
 
-		// Test wrong password
-		wrongPassword := "wrong123"
-		if wrongPassword == correctPassword {
-			t.Error("Wrong password should not validate")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
 		}
-	})
-}
+		defer resp.Body.Close()
 
-func TestFileExpiration(t *testing.T) {
-	t.Run("expiration parsing", func(t *testing.T) {
-		tests := []struct {
-			name     string
-			input    string
-			expected int
-		}{
-			{
-				name:     "valid hours",
-				input:    "12",
-				expected: 12,
-			},
-			{
-				name:     "empty input",
-				input:    "",
-				expected: 0,
-			},
-			{
-				name:     "invalid input",
-				input:    "invalid",
-				expected: 0,
-			},
-			{
-				name:     "out of range high",
-				input:    "25",
-				expected: 24,
-			},
-			{
-				name:     "out of range low",
-				input:    "0",
-				expected: 1,
-			},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				// Simulate ParseExpirationHours logic
-				var hours int
-				if tt.input == "" {
-					hours = 0
-				} else {
-					// Parse logic would go here
-					switch tt.input {
-					case "12":
-						hours = 12
-					case "25":
-						hours = 24 // Clamped to max
-					case "0":
-						hours = 1 // Clamped to min
-					default:
-						hours = 0 // Invalid
-					}
-				}
-
-				if hours != tt.expected {
-					t.Errorf("Expected %d hours, got %d", tt.expected, hours)
-				}
-			})
+		if resp.StatusCode != http.StatusRequestEntityTooLarge {
+			t.Errorf("Expected status 413, got %d", resp.StatusCode)
 		}
 	})
 
-	t.Run("expiration time calculation", func(t *testing.T) {
-		now := time.Now()
-		hours := 12
+	t.Run("upload 100MB file successfully", func(t *testing.T) {
+		// Create server with 200MB max upload size
+		ts, _ := setupTestServer(t, 200)
 
-		// Simulate CalculateExpirationTime logic
-		var expirationTime string
-		if hours > 0 {
-			futureTime := now.Add(time.Duration(hours) * time.Hour)
-			expirationTime = futureTime.Format(time.RFC3339)
+		// Create a 100MB file
+		fileSize := 100 * 1024 * 1024 // 100MB
+		largeContent := make([]byte, fileSize)
+		// Fill with some pattern to ensure it's not just zeros
+		for i := range largeContent {
+			largeContent[i] = byte(i % 256)
 		}
 
-		if hours > 0 && expirationTime == "" {
-			t.Error("Expected expiration time to be set")
+		var buf bytes.Buffer
+		writer := multipart.NewWriter(&buf)
+
+		fileField, err := writer.CreateFormFile("file", "large-100mb.bin")
+		if err != nil {
+			t.Fatalf("Failed to create form file: %v", err)
 		}
 
-		if hours == 0 && expirationTime != "" {
-			t.Error("Expected expiration time to be empty for 0 hours")
+		_, err = fileField.Write(largeContent)
+		if err != nil {
+			t.Fatalf("Failed to write file content: %v", err)
+		}
+
+		writer.Close()
+
+		// Make request to server
+		req, err := http.NewRequest("POST", ts.URL+"/", &buf)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("Expected status 200, got %d. Body: %s", resp.StatusCode, string(body))
+		}
+
+		// Verify JSON response
+		var uploadResp server.FileUploadResponse
+		if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+			t.Fatalf("Failed to decode JSON response: %v", err)
+		}
+
+		if uploadResp.FileId == "" {
+			t.Error("Expected non-empty FileId")
+		}
+
+		if uploadResp.FileUrl == "" {
+			t.Error("Expected non-empty FileUrl")
+		}
+
+		// Verify the file was actually stored by downloading it
+		downloadURL := uploadResp.FileUrl
+		downloadURL = strings.Replace(downloadURL, "/view/", "/download/", 1)
+
+		downloadReq, err := http.NewRequest("GET", downloadURL, nil)
+		if err != nil {
+			t.Fatalf("Failed to create download request: %v", err)
+		}
+
+		downloadResp, err := http.DefaultClient.Do(downloadReq)
+		if err != nil {
+			t.Fatalf("Failed to make download request: %v", err)
+		}
+		defer downloadResp.Body.Close()
+
+		if downloadResp.StatusCode != http.StatusOK {
+			t.Errorf("Expected download status 200, got %d", downloadResp.StatusCode)
+		}
+
+		// Verify the downloaded file size matches
+		downloadedContent, err := io.ReadAll(downloadResp.Body)
+		if err != nil {
+			t.Fatalf("Failed to read downloaded content: %v", err)
+		}
+
+		if len(downloadedContent) != fileSize {
+			t.Errorf("Expected downloaded file size %d bytes, got %d bytes", fileSize, len(downloadedContent))
+		}
+
+		// Verify content matches (check first and last KB to avoid full comparison overhead)
+		if !bytes.Equal(downloadedContent[:1024], largeContent[:1024]) {
+			t.Error("First 1KB of downloaded content doesn't match uploaded content")
+		}
+
+		if !bytes.Equal(downloadedContent[len(downloadedContent)-1024:], largeContent[len(largeContent)-1024:]) {
+			t.Error("Last 1KB of downloaded content doesn't match uploaded content")
 		}
 	})
 }
 
 func TestDownloadHandler(t *testing.T) {
-	t.Run("download request routing", func(t *testing.T) {
-		// Test URL parameter extraction
-		req := httptest.NewRequest("GET", "/download/test123", nil)
+	t.Run("download file", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
 
-		// Simulate chi URL parameter extraction
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("fileId", "test123")
-		rctx.URLParams.Add("action", "download")
+		// First, upload a file
+		fileContent := "Test file content"
 
-		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+		var buf bytes.Buffer
+		writer := multipart.NewWriter(&buf)
 
-		// Test parameter extraction
-		fileID := chi.URLParam(req, "fileId")
-		action := chi.URLParam(req, "action")
+		fileField, err := writer.CreateFormFile("file", "test.txt")
+		if err != nil {
+			t.Fatalf("Failed to create form file: %v", err)
+		}
+		fileField.Write([]byte(fileContent))
+		writer.Close()
 
-		if fileID != "test123" {
-			t.Errorf("Expected fileId 'test123', got '%s'", fileID)
+		req, err := http.NewRequest("POST", ts.URL+"/", &buf)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		var uploadResp server.FileUploadResponse
+		if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+			t.Fatalf("Failed to decode JSON response: %v", err)
 		}
 
-		if action != "download" {
-			t.Errorf("Expected action 'download', got '%s'", action)
+		// Now download the file
+		downloadURL := strings.Replace(uploadResp.FileUrl, "/view/", "/download/", 1)
+		downloadReq, err := http.NewRequest("GET", downloadURL, nil)
+		if err != nil {
+			t.Fatalf("Failed to create download request: %v", err)
+		}
+
+		downloadResp, err := http.DefaultClient.Do(downloadReq)
+		if err != nil {
+			t.Fatalf("Failed to make download request: %v", err)
+		}
+		defer downloadResp.Body.Close()
+
+		if downloadResp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", downloadResp.StatusCode)
+		}
+
+		// Verify content disposition is attachment
+		disposition := downloadResp.Header.Get("Content-Disposition")
+		if !strings.Contains(disposition, "attachment") {
+			t.Errorf("Expected Content-Disposition to contain 'attachment', got '%s'", disposition)
+		}
+
+		// Verify file content
+		downloadedContent, err := io.ReadAll(downloadResp.Body)
+		if err != nil {
+			t.Fatalf("Failed to read downloaded content: %v", err)
+		}
+
+		if string(downloadedContent) != fileContent {
+			t.Errorf("Expected content '%s', got '%s'", fileContent, string(downloadedContent))
 		}
 	})
 
-	t.Run("view vs download content disposition", func(t *testing.T) {
-		tests := []struct {
-			action              string
-			expectedDisposition string
-		}{
-			{
-				action:              "view",
-				expectedDisposition: "inline",
-			},
-			{
-				action:              "download",
-				expectedDisposition: "attachment",
-			},
+	t.Run("view text paste inline", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
+
+		// Upload text which should be viewable inline
+		textContent := "This is a text paste"
+
+		formData := url.Values{}
+		formData.Set("text", textContent)
+
+		req, err := http.NewRequest("POST", ts.URL+"/", strings.NewReader(formData.Encode()))
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		var uploadResp server.FileUploadResponse
+		if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+			t.Fatalf("Failed to decode JSON response: %v", err)
 		}
 
-		for _, tt := range tests {
-			t.Run(tt.action, func(t *testing.T) {
-				var fileDisposition string
-				if tt.action == "view" {
-					fileDisposition = "inline"
-				} else {
-					fileDisposition = "attachment"
-				}
+		// Text pastes should use /view/ URL
+		if !strings.Contains(uploadResp.FileUrl, "/view/") {
+			t.Errorf("Expected text paste to have /view/ URL, got %s", uploadResp.FileUrl)
+		}
 
-				if fileDisposition != tt.expectedDisposition {
-					t.Errorf("Expected disposition '%s', got '%s'", tt.expectedDisposition, fileDisposition)
-				}
-			})
+		// Access the view URL
+		viewReq, err := http.NewRequest("GET", uploadResp.FileUrl, nil)
+		if err != nil {
+			t.Fatalf("Failed to create view request: %v", err)
+		}
+
+		viewResp, err := http.DefaultClient.Do(viewReq)
+		if err != nil {
+			t.Fatalf("Failed to make view request: %v", err)
+		}
+		defer viewResp.Body.Close()
+
+		if viewResp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", viewResp.StatusCode)
+		}
+
+		// Verify content disposition is inline
+		disposition := viewResp.Header.Get("Content-Disposition")
+		if !strings.Contains(disposition, "inline") {
+			t.Errorf("Expected Content-Disposition to contain 'inline', got '%s'", disposition)
+		}
+
+		// Verify content
+		content, err := io.ReadAll(viewResp.Body)
+		if err != nil {
+			t.Fatalf("Failed to read content: %v", err)
+		}
+
+		if string(content) != textContent {
+			t.Errorf("Expected content '%s', got '%s'", textContent, string(content))
 		}
 	})
-}
 
-func TestContentTypeHandling(t *testing.T) {
-	t.Run("inline content type detection", func(t *testing.T) {
-		tests := []struct {
-			name         string
-			contentType  string
-			expectInline bool
-		}{
-			{
-				name:         "text file",
-				contentType:  "text/plain",
-				expectInline: true,
-			},
-			{
-				name:         "image file",
-				contentType:  "image/jpeg",
-				expectInline: true,
-			},
-			{
-				name:         "video file",
-				contentType:  "video/mp4",
-				expectInline: true,
-			},
-			{
-				name:         "binary file",
-				contentType:  "application/octet-stream",
-				expectInline: false,
-			},
-			{
-				name:         "executable file",
-				contentType:  "application/x-executable",
-				expectInline: false,
-			},
+	t.Run("view file", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
+
+		// Upload a file
+		fileContent := "Test file content"
+
+		var buf bytes.Buffer
+		writer := multipart.NewWriter(&buf)
+
+		fileField, err := writer.CreateFormFile("file", "test.txt")
+		if err != nil {
+			t.Fatalf("Failed to create form file: %v", err)
+		}
+		fileField.Write([]byte(fileContent))
+		writer.Close()
+
+		req, err := http.NewRequest("POST", ts.URL+"/", &buf)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		var uploadResp server.FileUploadResponse
+		if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+			t.Fatalf("Failed to decode JSON response: %v", err)
 		}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				// Simulate ShowInline logic
-				inline := strings.HasPrefix(tt.contentType, "text/") ||
-					strings.HasPrefix(tt.contentType, "image/") ||
-					strings.HasPrefix(tt.contentType, "video/") ||
-					strings.HasPrefix(tt.contentType, "audio/")
+		// Use the URL as returned (might be view or download depending on content type detection)
+		viewReq, err := http.NewRequest("GET", uploadResp.FileUrl, nil)
+		if err != nil {
+			t.Fatalf("Failed to create view request: %v", err)
+		}
 
-				if inline != tt.expectInline {
-					t.Errorf("Expected inline to be %v for %s, got %v", tt.expectInline, tt.contentType, inline)
-				}
-			})
+		viewResp, err := http.DefaultClient.Do(viewReq)
+		if err != nil {
+			t.Fatalf("Failed to make view request: %v", err)
+		}
+		defer viewResp.Body.Close()
+
+		if viewResp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", viewResp.StatusCode)
+		}
+
+		// Verify we can read the content
+		content, err := io.ReadAll(viewResp.Body)
+		if err != nil {
+			t.Fatalf("Failed to read content: %v", err)
+		}
+
+		if string(content) != fileContent {
+			t.Errorf("Expected content '%s', got '%s'", fileContent, string(content))
+		}
+	})
+
+	t.Run("download nonexistent file", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
+
+		req, err := http.NewRequest("GET", ts.URL+"/download/nonexistent", nil)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("Expected status 404, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("password protected file", func(t *testing.T) {
+		ts, _ := setupTestServer(t)
+
+		// Upload a password-protected file
+		fileContent := "Secret content"
+
+		var buf bytes.Buffer
+		writer := multipart.NewWriter(&buf)
+
+		fileField, err := writer.CreateFormFile("file", "secret.txt")
+		if err != nil {
+			t.Fatalf("Failed to create form file: %v", err)
+		}
+		fileField.Write([]byte(fileContent))
+		writer.WriteField("password", "secret123")
+		writer.Close()
+
+		req, err := http.NewRequest("POST", ts.URL+"/", &buf)
+		if err != nil {
+			t.Fatalf("Failed to create request: %v", err)
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("Failed to make request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		var uploadResp server.FileUploadResponse
+		if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+			t.Fatalf("Failed to decode JSON response: %v", err)
+		}
+
+		// Try to access without password - should show password form
+		viewReq, err := http.NewRequest("GET", uploadResp.FileUrl, nil)
+		if err != nil {
+			t.Fatalf("Failed to create view request: %v", err)
+		}
+
+		viewResp, err := http.DefaultClient.Do(viewReq)
+		if err != nil {
+			t.Fatalf("Failed to make view request: %v", err)
+		}
+		defer viewResp.Body.Close()
+
+		if viewResp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200 (password form), got %d", viewResp.StatusCode)
+		}
+
+		// Try with correct password
+		formData := url.Values{}
+		formData.Set("password", "secret123")
+
+		postReq, err := http.NewRequest("POST", uploadResp.FileUrl, strings.NewReader(formData.Encode()))
+		if err != nil {
+			t.Fatalf("Failed to create POST request: %v", err)
+		}
+		postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		postResp, err := http.DefaultClient.Do(postReq)
+		if err != nil {
+			t.Fatalf("Failed to make POST request: %v", err)
+		}
+		defer postResp.Body.Close()
+
+		if postResp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", postResp.StatusCode)
+		}
+
+		// Verify we got the file content
+		downloadedContent, err := io.ReadAll(postResp.Body)
+		if err != nil {
+			t.Fatalf("Failed to read downloaded content: %v", err)
+		}
+
+		if string(downloadedContent) != fileContent {
+			t.Errorf("Expected content '%s', got '%s'", fileContent, string(downloadedContent))
 		}
 	})
 }

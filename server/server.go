@@ -111,7 +111,17 @@ func New(options ...OptionFn) *Server {
 	return s
 }
 
-func (s *Server) Run() {
+func (s *Server) GetRouter() chi.Router {
+	if s.router != nil {
+		return s.router
+	}
+	
+	// Initialize router if not already done
+	s.setupRouter()
+	return s.router
+}
+
+func (s *Server) setupRouter() {
 	fs := http.FileServer(http.FS(StaticFS))
 
 	limiter := httprate.LimitByIP(s.maxRequests, 1*time.Minute)
@@ -149,6 +159,10 @@ func (s *Server) Run() {
 	s.protectedRouter.Post("/", s.formHandler)
 
 	s.router.Mount("/", s.protectedRouter)
+}
+
+func (s *Server) Run() {
+	s.setupRouter()
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.port),
