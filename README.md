@@ -64,6 +64,31 @@ location / {
 }
 ```
 
+### Docker
+
+You can run `fileigloo` using Docker. Here's an example command:
+
+```bash
+docker run -d -p 8080:8080 \
+    -e STORAGE=local \
+    -e UPLOAD_DIRECTORY=/data/uploads/ \
+    -v /path/to/local/uploads:/data/uploads/ \
+    --name fileigloo \
+    exler/fileigloo:latest
+```
+
+If you're running into problems with the uploads, you can try to set the `tmpfs` option for the container to have more available `/tmp` space:
+
+```bash
+docker run -d \
+    --tmpfs /tmp:rw,size=1536m \
+    -e STORAGE=local \
+    -e UPLOAD_DIRECTORY=/data/uploads/ \
+    -v /path/to/local/uploads:/data/uploads/ \
+    --name fileigloo \
+    exler/fileigloo:latest
+```
+
 ## Usage
 
 ### Program usage
